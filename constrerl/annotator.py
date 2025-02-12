@@ -11,8 +11,10 @@ from .annotations_schema import (
 from llama_cpp import Llama, ChatCompletionRequestMessage, LlamaGrammar
 from tqdm import tqdm
 import json
+import json_repair
 
-ANNOTATION_SYSTEM_PROMPT = """You are annotating a medical scientific article. You return every relation within the article as JSON. The returned relations include the relation type and text. You also include whether the relation occurs in the abstract or title.
+
+ANNOTATION_SYSTEM_PROMPT = """You are annotating a medical scientific title and abstract. You return only the most relevant relations within the title and abstract as JSON. The few returned relations include the relation type and text. It is very important to return only the ten most relevant relations.
 """
 
 
@@ -77,7 +79,7 @@ class Annotator:
 
     def annotate(
         self, articles: dict[str, Metadata]
-    ) -> list[TernaryMentionBasedRelation]:
+    ) -> dict[str, TernaryMentionBasedRelation]:
         annotated_relations = {}
         progress = tqdm(articles.items(), desc="Annotating articles")
         for id, article in progress:
@@ -87,10 +89,17 @@ class Annotator:
                 max_tokens=self.gen_tokens,
                 grammar=self.llama_grammar,
             )
-            relation_response = self.erl_type.model_validate_json(
-                chat_response.choices[-1].message.content
-            )
-            annotated_relations[id] = relation_response
+            response = chat_response["choices"][-1]["message"]["content"]
+            try:
+                fixed_response = json_repair.repair_json(response)
+                relation_response = self.erl_type.model_validate_json(
+                    fixed_response, strict=False
+                )
+                annotated_relations[id] = relation_response
+            except Exception as e:
+                print(f"Error in article {id}")
+                print(response)
+                print(e)
             progress.set_postfix({"id": id})
         return annotated_relations
 

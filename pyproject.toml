@@ -15,7 +15,10 @@ dependencies = [
     "llama-cpp-python",
     "tqdm>=4.67.1",
     "ipykernel",
-    "betterproto==2.0.0b6"
+    "betterproto==2.0.0b6",
+    "json-repair>=0.36.0",
+    "langchain-huggingface>=0.1.2",
+    "openai>=1.62.0",
 ]
 
 [tool.uv.sources]

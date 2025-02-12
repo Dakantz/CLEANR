@@ -127,7 +127,7 @@ relations = [
     },
     {
         "heads": ["Chemical", "Dietary Supplement", "Drug", "Food"],
-        "tails": ["Human"],
+        "tails": ["Human", "Animal"],
         "predicate": ["Administered"],
     },
     {"heads": ["DDF"], "tails": ["Anatomical Location"], "predicate": ["Strike"]},
@@ -138,7 +138,7 @@ relations = [
     },
     {"heads": ["DDF"], "tails": ["DDF"], "predicate": ["Affect", "Is a"]},
     {"heads": ["DDF"], "tails": ["Human", "Animal"], "predicate": ["Target"]},
-    {"heads": ["Drug"], "tails": ["Chemical", "Drug"], "predicate": ["Interact"]},
+    {"heads": ["Drug", "DDF"], "tails": ["Chemical", "Drug"], "predicate": ["Interact"]},
     {"heads": ["Drug"], "tails": ["DDF"], "predicate": ["Change effect"]},
     {
         "heads": ["Microbiome"],
@@ -146,7 +146,7 @@ relations = [
         "predicate": ["Located in"],
     },
     {
-        "heads": ["Microbiome", "Human"], #TODO: check with gianmaria
+        "heads": ["Microbiome", "Human"],  # TODO: check with gianmaria
         "tails": ["Biomedical Technique"],
         "predicate": ["Used by"],
     },
@@ -170,6 +170,10 @@ def clean_label(label: str) -> str:
     return label.lower().strip()
 
 
+def enumize_label(label: str) -> Enum:
+    return label.replace(" ", "_").replace("-", "_").replace("/", "_")
+
+
 class LabelLocation(Enum):
     ABSTRACT = "abstract"
     TEXT = "text"
@@ -184,20 +188,32 @@ def build_model():
         tails = [clean_label(tail) for tail in relation["tails"]]
         predicates = [clean_label(pred) for pred in relation["predicate"]]
 
-        enum_heads = Enum("Entity", {head: head for head in heads})
-        enum_tails = Enum("Entity", {tail: tail for tail in tails})
-        enum_predicates = Enum("Predicate", {pred: pred for pred in predicates})
-
+        enum_heads = Enum("Entity", {enumize_label(head): head for head in heads})
+        enum_tails = Enum("Entity", {enumize_label(tail): tail for tail in tails})
+        enum_predicates = Enum(
+            "Predicate", {enumize_label(pred): pred for pred in predicates}
+        )
+        model_names = []
+        for head in heads:
+            for tail in tails:
+                for pred in predicates:
+                    model_names.append(
+                        "_".join([enumize_label(lbl) for lbl in [head, tail, pred]])
+                    )
+                    break
+                break
+            break
+        model_name = "_".join(model_names)
         relation_models.append(
             create_model(
-                f"{heads[0]}_{tails[0]}_{predicates[0]}",
+                f"ERL_{model_name}",
                 subject_label=(enum_heads, ...),
                 subject_text_span=(str, ...),
                 subject_location=(LabelLocation, ...),
+                predicate=(enum_predicates, ...),
                 object_label=(enum_tails, ...),
                 object_text_span=(str, ...),
                 object_location=(LabelLocation, ...),
-                predicate=(enum_predicates, ...),
             )
         )
     relation_union = create_model(

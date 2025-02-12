@@ -1,2 +1,5 @@
-models
+
 .venv
+quants/*.gguf
+models/*/*
+__pycache__/

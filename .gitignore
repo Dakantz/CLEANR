@@ -3,3 +3,4 @@
 quants/*.gguf
 models/*/*
 __pycache__/
+*.log

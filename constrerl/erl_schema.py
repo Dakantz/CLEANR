@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, create_model
-from typing import List, Tuple, Union
+from pydantic import BaseModel, create_model, Field
+from typing import List, Tuple, Union, Annotated, Literal
 from enum import Enum
 from llama_cpp_agent.gbnf_grammar_generator.gbnf_grammar_from_pydantic_models import (
     generate_gbnf_grammar_from_pydantic_models,
@@ -138,7 +138,11 @@ relations = [
     },
     {"heads": ["DDF"], "tails": ["DDF"], "predicate": ["Affect", "Is a"]},
     {"heads": ["DDF"], "tails": ["Human", "Animal"], "predicate": ["Target"]},
-    {"heads": ["Drug", "DDF"], "tails": ["Chemical", "Drug"], "predicate": ["Interact"]},
+    {
+        "heads": ["Drug", "DDF"],
+        "tails": ["Chemical", "Drug"],
+        "predicate": ["Interact"],
+    },
     {"heads": ["Drug"], "tails": ["DDF"], "predicate": ["Change effect"]},
     {
         "heads": ["Microbiome"],
@@ -181,6 +185,38 @@ class LabelLocation(Enum):
 
 
 def build_model():
+    possible_links = {}
+    for relation in relations:
+        heads = [clean_label(head) for head in relation["heads"]]
+        tails = [clean_label(tail) for tail in relation["tails"]]
+        predicates = [clean_label(pred) for pred in relation["predicate"]]
+
+        for head in heads:
+            enum_head = enumize_label(head)
+            for tail in tails:
+                enum_tail = enumize_label(tail)
+                for pred in predicates:
+                    enum_pred = enumize_label(pred)
+                    possible_links["_".join([enum_head, enum_pred, enum_tail])] = (
+                        " | ".join([head, pred, tail])
+                    )
+    link_type = Enum("LinkType", possible_links)
+    relation_type = create_model(
+        "Relation",
+        link_type=(link_type, ...),
+        subject_text_span=(str, ...),
+        subject_location=(LabelLocation, ...),
+        object_text_span=(str, ...),
+        object_location=(LabelLocation, ...),
+    )
+    relation_union = create_model("Relations", relations=(list[relation_type], ...))
+    return relation_union
+
+
+StringERLModel = build_model()
+
+
+def build_enum_model():
     relation_models = []
 
     for relation in relations:
@@ -200,9 +236,6 @@ def build_model():
                     model_names.append(
                         "_".join([enumize_label(lbl) for lbl in [head, tail, pred]])
                     )
-                    break
-                break
-            break
         model_name = "_".join(model_names)
         relation_models.append(
             create_model(
@@ -216,10 +249,35 @@ def build_model():
                 object_location=(LabelLocation, ...),
             )
         )
-    relation_union = create_model(
-        "Relations", relations=(list[Union[tuple(relation_models)]], ...)
-    )
+    relation_type = Union[tuple(relation_models)]
+    relation_union = create_model("Relations", relations=(list[relation_type], ...))
     return relation_union
+
+
+EnumERLModel = build_enum_model()
+
+
+def convert_to_enum_model(enum_model: "StringERLModel") -> "EnumERLModel":
+    converted_relations = []
+    for relation in enum_model.relations:
+        data = relation.model_dump()
+        spo = relation.link_type.split(" | ")
+        data["subject_label"] = spo[0]
+        data["predicate"] = spo[1]
+        data["object_label"] = spo[2]
+        converted_relations.append(data)
+    return EnumERLModel.model_validate({"relations": converted_relations})
+
+
+def convert_to_string_model(string_model: "EnumERLModel") -> "StringERLModel":
+    converted_relations = []
+    for relation in string_model.relations:
+        spo = relation.subject_label, relation.predicate, relation.object_label
+        spo_values= [e.value for e in spo]
+        data = relation.dict()
+        data["link_type"] = " | ".join(spo_values)
+        converted_relations.append(data)
+    return StringERLModel.model_validate({"relations": converted_relations})
 
 
 def build_grammar():

@@ -83,14 +83,18 @@ relations = [
         "predicate": ["Located in"],
     },
     {
-        "heads": ["Bacteria"],
+        "heads": ["Bacteria", "DDF"],
         "tails": ["Bacteria", "Chemical", "Drug"],
         "predicate": ["Interact"],
     },
-    {"heads": ["Bacteria"], "tails": ["DDF"], "predicate": ["Influence"]},
+    {
+        "heads": ["Bacteria", "DDF", "Microbiome"],
+        "tails": ["DDF"],
+        "predicate": ["Influence"],
+    },
     {"heads": ["Bacteria"], "tails": ["Gene"], "predicate": ["Change expression"]},
     {
-        "heads": ["Bacteria"],
+        "heads": ["Bacteria", "Gene"],
         "tails": ["Human", "Animal"],
         "predicate": ["Located in"],
     },
@@ -136,22 +140,34 @@ relations = [
         "tails": ["Bacteria", "Microbiome"],
         "predicate": ["Change abundance"],
     },
-    {"heads": ["DDF"], "tails": ["DDF"], "predicate": ["Affect", "Is a"]},
-    {"heads": ["DDF"], "tails": ["Human", "Animal"], "predicate": ["Target"]},
+    {
+        "heads": ["DDF", "Gene", "Drug"],
+        "tails": ["DDF", "Human"],
+        "predicate": ["Affect", "Is a"],
+    },
+    {
+        "heads": ["DDF", "Human", "Drug"],
+        "tails": ["Human", "Animal"],
+        "predicate": ["Target"],
+    },
     {
         "heads": ["Drug", "DDF"],
         "tails": ["Chemical", "Drug"],
         "predicate": ["Interact"],
     },
-    {"heads": ["Drug"], "tails": ["DDF"], "predicate": ["Change effect"]},
+    {
+        "heads": ["Drug", "Chemical", "Dietary Supplement"],
+        "tails": ["DDF"],
+        "predicate": ["Change effect"],
+    },
     {
         "heads": ["Microbiome"],
         "tails": ["Anatomical Location", "Human", "Animal"],
         "predicate": ["Located in"],
     },
     {
-        "heads": ["Microbiome", "Human"],  # TODO: check with gianmaria
-        "tails": ["Biomedical Technique"],
+        "heads": ["Microbiome", "Human", "Animal"],  # TODO: check with gianmaria
+        "tails": ["Biomedical Technique", "Statistical Technique"],
         "predicate": ["Used by"],
     },
     {
@@ -273,7 +289,7 @@ def convert_to_string_model(string_model: "EnumERLModel") -> "StringERLModel":
     converted_relations = []
     for relation in string_model.relations:
         spo = relation.subject_label, relation.predicate, relation.object_label
-        spo_values= [e.value for e in spo]
+        spo_values = [e.value for e in spo]
         data = relation.dict()
         data["link_type"] = " | ".join(spo_values)
         converted_relations.append(data)

@@ -19,6 +19,7 @@ dependencies = [
     "json-repair>=0.36.0",
     "langchain-huggingface>=0.1.2",
     "openai>=1.62.0",
+    "langchain[openai]>=0.3.18",
 ]
 
 [tool.uv.sources]

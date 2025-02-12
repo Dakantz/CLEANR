@@ -6,10 +6,6 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "sigstore>=3.6.1",
-    "torch>=2.6.0",
-    "torchao>=0.8.0",
-    "torchtune>=0.5.0",
-    "torchvision>=0.21.0",
     "transformers>=4.48.3",
     "llama-cpp-agent",
     "llama-cpp-python",
@@ -20,6 +16,13 @@ dependencies = [
     "langchain-huggingface>=0.1.2",
     "openai>=1.62.0",
     "langchain[openai]>=0.3.18",
+    "datasets>=3.2.0",
+    "torch==2.5.1",
+    "torchvision>=0.20.1",
+    "torchao>=0.8.0",
+    "torchaudio>=2.5.1",
+    "torchtune>=0.5.0",
+    "triton-nightly",
 ]
 
 [tool.uv.sources]
@@ -33,6 +36,7 @@ onnxruntime-gpu = [
 llama-cpp-agent = [
     { git = "https://github.com/Dakantz/llama-cpp-agent.git", branch = "fix-gbnf-generation-trailing-bracket" },
 ]
+triton-nightly = [{ index = "triton-nightly" }]
 
 [[tool.uv.index]]
 name = "llama-metal"
@@ -42,4 +46,9 @@ explicit = true
 [[tool.uv.index]]
 name = "llama-gpu"
 url = "https://abetlen.github.io/llama-cpp-python/whl/cu124/"
+explicit = true
+
+[[tool.uv.index]]
+name = "triton-nightly"
+url = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/Triton-Nightly/pypi/simple/"
 explicit = true

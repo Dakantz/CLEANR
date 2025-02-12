@@ -4,3 +4,6 @@ quants/*.gguf
 models/*/*
 __pycache__/
 *.log
+*.err
+*.out
+finetunes/*/*

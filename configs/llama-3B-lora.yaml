@@ -23,7 +23,7 @@ output_dir: finetunes/llama-3-2-3B-instruct-lora
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
   path: models/llama-3-2-3B-instruct/original/tokenizer.model
-  max_seq_len: 1024
+  max_seq_len: 2048
 
 # Model Arguments
 model:
@@ -79,7 +79,7 @@ loss:
 epochs: 1
 max_steps_per_epoch: null
 gradient_accumulation_steps: 8  # Use to increase effective batch size
-compile: False  # torch.compile the model + loss, True increases speed + decreases memory
+compile: True  # torch.compile the model + loss, True increases speed + decreases memory
 
 # Logging
 metric_logger:

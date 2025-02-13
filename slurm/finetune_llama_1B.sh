@@ -14,7 +14,7 @@ export LIBRARY_PATH="/usr/local/cuda-12.6/lib64/stubs/:$LIBRARY_PATH"
 cd ..
 source .venv/bin/activate
 
-configs=("configs/llama-lora.yaml")
+configs=("configs/llama-1B-lora.yaml")
 
 cfg_id=$(($SLURM_ARRAY_TASK_ID % 2))
 selected_config=${configs[$cfg_id]}

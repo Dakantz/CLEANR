@@ -52,8 +52,9 @@ dataset:
   source: json
   data_files: ./data/train_data_chats.json
   split: train
-  conversation_column: chat
+  conversation_column: messages
   conversation_style: openai
+  new_system_prompt: "You are a annotator for medical abstracts. You are tasked with extracting the key relations from the title and abstract and returning a JSON object with the most significant extracted relations."
 
 seed: 0
 shuffle: True

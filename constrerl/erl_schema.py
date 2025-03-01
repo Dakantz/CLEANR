@@ -165,6 +165,8 @@ relations = [
         "tails": ["Microbiome"],
         "predicate": ["Compared to"],
     },
+]
+extended_relations = [
     {"heads": ["DDF"], "tails": ["human"], "predicate": ["affect"]},
     {"heads": ["DDF"], "tails": ["DDF"], "predicate": ["influence"]},
     {"heads": ["chemical"], "tails": ["DDF"], "predicate": ["change effect"]},
@@ -425,7 +427,7 @@ class LabelLocation(Enum):
     TITLE = "title"
 
 
-def build_model():
+def build_model(relations=relations):
     possible_links = {}
     for relation in relations:
         heads = [clean_label(head) for head in relation["heads"]]
@@ -455,11 +457,12 @@ def build_model():
 
 
 StringERLModel = build_model()
+ExtendedStringERLModel = build_model(extended_relations + relations)
 
 
-def build_enum_model():
+
+def build_enum_model(relations=relations):
     relation_models = []
-
     for relation in relations:
         heads = [clean_label(head) for head in relation["heads"]]
         tails = [clean_label(tail) for tail in relation["tails"]]
@@ -496,29 +499,34 @@ def build_enum_model():
 
 
 EnumERLModel = build_enum_model()
+ExtendedEnumERLModel = build_enum_model(extended_relations + relations)
 
 
-def convert_to_enum_model(enum_model: "StringERLModel") -> "EnumERLModel":
+def convert_to_enum_model(
+    string_data: "StringERLModel", model=EnumERLModel
+) -> "EnumERLModel":
     converted_relations = []
-    for relation in enum_model.relations:
+    for relation in string_data.relations:
         data = relation.model_dump()
         spo = relation.link_type.split(" | ")
         data["subject_label"] = spo[0]
         data["predicate"] = spo[1]
         data["object_label"] = spo[2]
         converted_relations.append(data)
-    return EnumERLModel.model_validate({"relations": converted_relations})
+    return model.model_validate({"relations": converted_relations})
 
 
-def convert_to_string_model(string_model: "EnumERLModel") -> "StringERLModel":
+def convert_to_string_model(
+    enum_data: "EnumERLModel", model=StringERLModel
+) -> "StringERLModel":
     converted_relations = []
-    for relation in string_model.relations:
+    for relation in enum_data.relations:
         spo = relation.subject_label, relation.predicate, relation.object_label
         spo_values = [e.value for e in spo]
         data = relation.dict()
         data["link_type"] = " | ".join(spo_values)
         converted_relations.append(data)
-    return StringERLModel.model_validate({"relations": converted_relations})
+    return model.model_validate({"relations": converted_relations})
 
 
 def build_grammar():

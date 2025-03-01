@@ -7,3 +7,6 @@ __pycache__/
 *.err
 *.out
 finetunes/*/*
+*.json
+*.jsonl
+data/pgvector

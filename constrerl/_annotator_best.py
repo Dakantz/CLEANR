@@ -31,12 +31,11 @@ from sqlalchemy.orm import Session
 from .db_schema import Base, RelDocument
 
 from sentence_transformers import SentenceTransformer
-from FlagEmbedding import BGEM3FlagModel
 
-ANNOTATION_SYSTEM_PROMPT = """You are annotating a medical scientific title and abstract. You return all relation between entities within the title and abstract as JSON. The returned data include the relation type and text and should cover all relations over all relevant entities occurring in the text."""
+ANNOTATION_SYSTEM_PROMPT = """You are annotating a medical scientific title and abstract. You return all relations within the title and abstract as JSON. The returned relations include the relation type and text and should cover all medical relations occurring in the text."""
 
 
-class Annotator:
+class AnnotatorBest:
     def __init__(
         self,
         model: Llama = None,
@@ -48,13 +47,6 @@ class Annotator:
         top_k=10,
         add_few_shot=False,
         add_rag=False,
-        reorder=False,
-        score_reweights={
-            "platinum": 1.0,
-            "gold": 0.9,
-            "silver": 0.8,
-            "bronze": 0.7,
-        },
     ):
         self.model = model
         self.langchain = langchain
@@ -71,14 +63,10 @@ class Annotator:
         self.erl_model = StringERLModel
         self.extended_erl_model = ExtendedStringERLModel
         self.engine = create_engine(conn_str)
-        # self.embedding_model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)
         self.embedding_model = SentenceTransformer(embedding_model)
-
         self.top_k = top_k
         self.few_shot = add_few_shot
         self.rag = add_rag
-        self.score_reweights = score_reweights
-        self.reorder = reorder
 
     @classmethod
     def __prompt_article(self, metadata: Metadata):
@@ -120,60 +108,20 @@ class Annotator:
             return AIMessage(message["content"])
 
     def find_similar_examples(self, article: Metadata):
-        # search_embedding = self.embedding_model.encode(
-        #     [article.title + "\n" + article.abstract],
-        #     batch_size=12,
-        #     max_length=8192,  # If you don't need such a long length, you can set a smaller value to speed up the encoding process.
-        # )["dense_vecs"]
         search_embedding = self.embedding_model.encode(
             [article.title + "\n" + article.abstract]
         )
         with Session(self.engine) as session:
-            collection_docs: dict[str, list] = {}
-            if self.reorder:
-                for collection in self.score_reweights.keys():
-                    collection_docs[collection] = session.execute(
-                        select(
-                            RelDocument.doc_meta.label("doc_meta"),
-                            RelDocument.vectors.cosine_distance(
-                                search_embedding[0]
-                            ).label("score"),
-                        )
-                        .filter(RelDocument.collection.contains(collection))
-                        .order_by(
-                            RelDocument.vectors.cosine_distance(search_embedding[0])
-                        )
-                        .limit(self.top_k)
-                    ).all()
-                best_matches: list[tuple[RelDocument, float]] = []
-                for collection, docs in collection_docs.items():
-                    for r in docs:
-                        document: str = r.doc_meta
-                        score = r.score * self.score_reweights[collection]
-                        best_matches.append(
-                            (Article.model_validate_json(document), score)
-                        )
-                best_matches = sorted(best_matches, key=lambda x: x[1], reverse=False)[
-                    -self.top_k :
-                ]
-                articles = [match for match, score in best_matches]
-                return articles
-            else:
-                best_matches_documents = session.execute(
-                    select(
-                        RelDocument.doc_meta.label("doc_meta"),
-                        RelDocument.vectors.cosine_distance(search_embedding[0]).label(
-                            "score"
-                        ),
-                    )
-                    .order_by(RelDocument.vectors.cosine_distance(search_embedding[0]))
-                    .limit(self.top_k)
-                ).all()
-                best_matches: list[Article] = []
-                for r in best_matches_documents:
-                    document: str = r.doc_meta
-                    best_matches.append(Article.model_validate_json(document))
-                return best_matches
+            best_matches = session.scalars(
+                select(RelDocument)
+                .order_by(RelDocument.vectors.cosine_distance(search_embedding[0]))
+                .limit(self.top_k)
+            ).all()
+            articles = [
+                Article.model_validate(json.loads(match.doc_meta))
+                for match in best_matches
+            ]
+            return articles
 
     def annotate(self, articles: dict[str, Metadata]) -> dict[str, StringERLModel]:
         annotated_relations = {}
@@ -239,18 +187,13 @@ class Annotator:
         with Session(self.engine) as session:
             for i, article in enumerate(tqdm(articles, desc="Embedding articles")):
                 article_json = article.model_dump_json()
-                # embeddings = self.embedding_model.encode(
-                #     [article.metadata.title + "\n" + article.metadata.abstract],
-                #     batch_size=12,
-                #     max_length=8192,  # If you don't need such a long length, you can set a smaller value to speed up the encoding process.
-                # )["dense_vecs"]
                 embeddings = self.embedding_model.encode(
                     [article.metadata.title + "\n" + article.metadata.abstract]
                 )
                 document = RelDocument(
                     title=article.metadata.title,
                     abstract=article.metadata.abstract,
-                    vectors=embeddings[0, :].astype(float),
+                    vectors=embeddings[0, :],
                     doc_meta=article_json,
                     collection=collection,
                 )

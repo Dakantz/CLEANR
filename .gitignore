@@ -10,3 +10,4 @@ finetunes/*/*
 *.json
 *.jsonl
 data/pgvector
+build

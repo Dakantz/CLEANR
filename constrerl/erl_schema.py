@@ -6,6 +6,12 @@ from enum import Enum
 from llama_cpp_agent.gbnf_grammar_generator.gbnf_grammar_from_pydantic_models import (
     generate_gbnf_grammar_from_pydantic_models,
 )
+from .annotations_schema import (
+    Relation,
+    TernaryMentionBasedRelation,
+    TernaryTagBasedRelation,
+    Article,
+)
 
 
 entity_labels = [
@@ -460,7 +466,6 @@ StringERLModel = build_model()
 ExtendedStringERLModel = build_model(extended_relations + relations)
 
 
-
 def build_enum_model(relations=relations):
     relation_models = []
     for relation in relations:
@@ -508,12 +513,36 @@ def convert_to_enum_model(
     converted_relations = []
     for relation in string_data.relations:
         data = relation.model_dump()
-        spo = relation.link_type.split(" | ")
+        spo = relation.link_type.value.split(" | ")
+        spo = [e.strip() for e in spo]
         data["subject_label"] = spo[0]
         data["predicate"] = spo[1]
         data["object_label"] = spo[2]
         converted_relations.append(data)
     return model.model_validate({"relations": converted_relations})
+
+
+def convert_to_output(string_data: "StringERLModel", model=EnumERLModel):
+    converted = convert_to_enum_model(string_data, model)
+    converted_output_relations = Article(
+        ternary_mention_based_relations=[], ternary_tag_based_relations=[]
+    )
+    for relation in converted.relations:
+        tmbr = TernaryMentionBasedRelation(
+            subject_text_span=relation.subject_text_span,
+            subject_label=relation.subject_label.value,
+            predicate=relation.predicate.value,
+            object_text_span=relation.object_text_span,
+            object_label=relation.object_label.value,
+        )
+        ttbr = TernaryTagBasedRelation(
+            subject_label=relation.subject_label.value,
+            predicate=relation.predicate.value,
+            object_label=relation.object_label.value,
+        )
+        converted_output_relations.ternary_tag_based_relations.append(ttbr)
+        converted_output_relations.ternary_mention_based_relations.append(tmbr)
+    return converted_output_relations
 
 
 def convert_to_string_model(

@@ -156,7 +156,7 @@ class Annotator:
                 best_matches = sorted(best_matches, key=lambda x: x[1], reverse=False)[
                     -self.top_k :
                 ]
-                articles = [match for match, score in best_matches]
+                articles: list[Article] = [match for match, score in best_matches]
                 return articles
             else:
                 best_matches_documents = session.execute(

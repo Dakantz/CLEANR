@@ -50,7 +50,7 @@ dataset:
   packed: True
   train_on_input: True
   source: json
-  data_files: ./data/train_data_chats.json
+  data_files: ./data/annotations/train_data_chats.json
   split: train
   conversation_column: messages
   conversation_style: openai
@@ -58,7 +58,7 @@ dataset:
 
 seed: 0
 shuffle: True
-batch_size: 2
+batch_size: 1
 
 # Optimizer and Scheduler
 optimizer:

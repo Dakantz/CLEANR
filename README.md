@@ -15,5 +15,5 @@ git submodule update --init --recursive
 # dowload models (make sure to set you HF token!)
 tune download NousResearch/Hermes-3-Llama-3.2-3B  --output-dir models/hermes-3-2-3B
 tune download meta-llama/Llama-3.2-3B-Instruct  --output-dir models/llama-3-2-3B-instruct
-
+python quantize_all.py
 

@@ -2,17 +2,6 @@ import os
 import os.path as osp
 import sys
 from convert_hf_to_gguf import Model, split_str_to_n_bytes
-from convert_lora_to_gguf import (
-    PartialLoraTensor,
-    LoraTorchTensor,
-    Iterable,
-    Iterator,
-    cast,
-    get_base_tensor_name,
-    LazyTorchTensor,
-    json,
-    Any,
-)
 import argparse
 import torch
 import gguf
@@ -31,6 +20,8 @@ args = args_parse.parse_args()
 
 def quantize_all():
     models = os.listdir(args.model_path)
+    if not os.path.exists(args.finetunes_path):
+        os.mkdir(args.finetunes_path)
     finetunes = os.listdir(args.finetunes_path)
 
     ftype_map: dict[str, gguf.LlamaFileType] = {

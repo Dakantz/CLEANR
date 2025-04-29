@@ -11,7 +11,7 @@ class Metadata(BaseModel):
     journal: str
     year: str
     abstract: str
-    annotator: str
+    annotator: str | None = None
 
 
 class Entity(BaseModel):

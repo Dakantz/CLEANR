@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=clef_openai_4o
+#SBATCH --job-name=clef_hermes_3b_lora
 #SBATCH -c 1
-#SBATCH --mem 4G
+#SBATCH --mem 5500M
 #SBATCH -a 0-4%2
 #SBATCH --account=bkantz
 #SBATCH --output=logs/inference_%A_%a.out
@@ -12,7 +12,7 @@ export LIBRARY_PATH="/usr/local/cuda-12.6/lib64/stubs/:$LIBRARY_PATH"
 
 # either use --add-rag or --reorder bases on $SLURM_ARRAY_TASK_ID
 FLAGS=""
-out_file="data/results_test/openai-4o-mini-"
+out_file="data/results_test/hermes-3b-lora-"
 if [ $(($SLURM_ARRAY_TASK_ID%2)) -eq 0 ]; then
     FLAGS="$FLAGS --add-rag"
     echo "Using --add-rag"
@@ -33,4 +33,4 @@ echo "Running with $FLAGS to $out_file"
 cd ..
 . .venv/bin/activate
 
-python inference.py --model-provider openai --out-path $out_file $FLAGS 
+python inference.py --model-provider llama --model-spec quants/hermes-3-2-3B-lora.gguf --out-path $out_file $FLAGS 

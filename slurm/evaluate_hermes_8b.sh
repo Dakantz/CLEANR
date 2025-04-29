@@ -12,7 +12,7 @@ export LIBRARY_PATH="/usr/local/cuda-12.6/lib64/stubs/:$LIBRARY_PATH"
 
 # either use --add-rag or --reorder bases on $SLURM_ARRAY_TASK_ID
 FLAGS=""
-out_file="data/results/hermes-8b-"
+out_file="data/results_test/hermes-8b-"
 if [ $(($SLURM_ARRAY_TASK_ID%2)) -eq 0 ]; then
     FLAGS="$FLAGS --add-rag"
     echo "Using --add-rag"

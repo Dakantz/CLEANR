@@ -215,9 +215,22 @@ class Annotator:
                 )
                 response = chat_response["choices"][-1]["message"]["content"]
                 try:
-                    fixed_response = json_repair.repair_json(response)
+                    resp = json_repair.repair_json(response, logging=True)
+                    log = []
+                    fixed_response = ""
+                    if isinstance(resp, tuple):
+                        fixed_response = resp[0]
+                        log = resp[1]
+                    else:
+                        fixed_response = resp
+                    if len(log) > 0:
+                        print(f"Error in article {id}")
+                        print(log)
+                        print("removing last element")
+                        fixed_response["relations"] = fixed_response["relations"][:-1]
+                    resp_str = json.dumps(fixed_response)
                     relation_response = self.erl_model.model_validate_json(
-                        fixed_response, strict=False
+                        resp_str, strict=False
                     )
                     # relation_response_enum = convert_to_enum_model(relation_response)
                     annotated_relations[id] = relation_response
@@ -275,7 +288,7 @@ def load_test(file_path: str):
     articles: dict[str, Metadata] = {}
     for id, article in data.items():
         articles[id] = Metadata.model_validate(article)
-    return
+    return articles
 
 
 def article_to_enum_model(article: Article, model=EnumERLModel):

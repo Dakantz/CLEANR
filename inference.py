@@ -34,7 +34,7 @@ if __name__ == "__main__":
         "--model-spec", type=str, default="quants/llama-3-2-1B-instruct-lora.gguf"
     )
     parser.add_argument(
-        "--data-path", type=str, default="data/annotations/dev/dev.json"
+        "--data-path", type=str, default="data/articles/articles_test.json"
     )
     parser.add_argument("--out-path", type=str, default="data/results/dev_out.json")
     parser.add_argument("--top-k", type=int, default=5)
@@ -57,7 +57,7 @@ if __name__ == "__main__":
                 model = Llama(
                     model_path,
                     n_gpu_layers=-1,
-                    n_ctx=4096,
+                    n_ctx=8096,
                     temperature=0.1,
                     # draft_model=LlamaPromptLookupDecoding(num_pred_tokens=10),
                 )
@@ -87,7 +87,11 @@ if __name__ == "__main__":
         top_k=args.top_k,
     )
     # annotator = Annotator(model=model, gen_tokens=2048)
-    eval_set = load_train(data_path)
+    if "articles" in args.data_path:
+        eval_set = load_test(data_path)
+    else:
+        eval_set = load_train(data_path)
+        eval_set = {id: article.metadata for id, article in eval_set.items()}
     # few_shot_samples = 10
     # annotator.add_prompt_examples([a for a in eval_set.values()][0:few_shot_samples])
 
@@ -101,9 +105,9 @@ if __name__ == "__main__":
 
     # %%
     annotations: dict[str, StringERLModel] = annotator.annotate(
-        {id: article.metadata for id, article in list(eval_set.items())}
+        {id: article for id, article in list(eval_set.items())}
     )
-    output_model={
+    output_model = {
         id: convert_to_output(article).model_dump()
         for id, article in list(annotations.items())
     }

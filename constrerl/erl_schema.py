@@ -8,6 +8,7 @@ from llama_cpp_agent.gbnf_grammar_generator.gbnf_grammar_from_pydantic_models im
 )
 from .annotations_schema import (
     Relation,
+    BinaryTagBasedRelation,
     TernaryMentionBasedRelation,
     TernaryTagBasedRelation,
     Article,
@@ -525,9 +526,16 @@ def convert_to_enum_model(
 def convert_to_output(string_data: "StringERLModel", model=EnumERLModel):
     converted = convert_to_enum_model(string_data, model)
     converted_output_relations = Article(
-        ternary_mention_based_relations=[], ternary_tag_based_relations=[]
+        ternary_mention_based_relations=[],
+        ternary_tag_based_relations=[],
+        binary_tag_based_relations=[],
+        entities=[],
     )
     for relation in converted.relations:
+        bnre = BinaryTagBasedRelation(
+            subject_label=relation.subject_label.value,
+            object_label=relation.object_label.value,
+        )
         tmbr = TernaryMentionBasedRelation(
             subject_text_span=relation.subject_text_span,
             subject_label=relation.subject_label.value,
@@ -540,6 +548,7 @@ def convert_to_output(string_data: "StringERLModel", model=EnumERLModel):
             predicate=relation.predicate.value,
             object_label=relation.object_label.value,
         )
+        converted_output_relations.binary_tag_based_relations.append(bnre)
         converted_output_relations.ternary_tag_based_relations.append(ttbr)
         converted_output_relations.ternary_mention_based_relations.append(tmbr)
     return converted_output_relations

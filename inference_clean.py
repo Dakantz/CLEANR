@@ -34,16 +34,18 @@ if __name__ == "__main__":
         "--model-spec", type=str, default="quants/llama-3-2-1B-instruct-lora.gguf"
     )
     parser.add_argument(
+        # "--data-path", type=str, default="data/articles/articles_test.json"
         "--data-path", type=str, default="data/articles/articles_test.json"
     )
-    parser.add_argument("--out-path", type=str, default="data/results/dev_out.json")
+    parser.add_argument("--out-path", type=str, default="data/results_test")
+    parser.add_argument("--out-file", type=str, default="dev_out.json")
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--gen-tokens", type=int, default=4096)
     parser.add_argument("--add-rag", default=False, action="store_true")
     parser.add_argument("--reorder", default=False, action="store_true")
     args = parser.parse_args()
     print("Starting with", args)
-    OPENAI_API_KEY = "YOUR_API_KEY"
+    OPENAI_API_KEY = "sk-your-key"
     os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
     llm: BaseChatModel = None
     model: Llama = None
@@ -77,7 +79,7 @@ if __name__ == "__main__":
 
     # %%
     data_path = args.data_path
-    out_path = args.out_path
+    out_path = Path(args.out_path) / args.out_file
     annotator = Annotator(
         langchain=llm,
         model=model,

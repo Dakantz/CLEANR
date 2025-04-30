@@ -11,3 +11,4 @@ finetunes/*/*
 *.jsonl
 data/pgvector
 build
+staging

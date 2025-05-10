@@ -12,3 +12,5 @@ finetunes/*/*
 data/pgvector
 build
 staging
+staging_ontug
+*.meta

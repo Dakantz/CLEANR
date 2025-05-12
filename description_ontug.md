@@ -4,6 +4,9 @@
 * TaskID: {{task_id}}
 * RunID: {{run_id}}
 * Run Flags
+{{#flags}}
+  - {{.}}
+{{/flags}}
 * GitHub: https://github.com/Dakantz/CLEANR
 ## Our appraoch
 * Use a RAG approach to prompt a LM to return the relations
@@ -14,7 +17,7 @@
   - `NousResearch/Hermes-3-Llama-3.2-3B` + a finetuned LoRA-version
   - `NousResearch/Hermes-3-Llama-3.1-8B`
   - `gpt-4o-mini-2024-07-18`
-* Merged with the Graphwise team:
+* Merged with the Graphwise team, strategy based on run ID (either intersection or union):
   - Type of training applied. Finetuning `microsoft/BiomedNLP-BiomedELECTRA-base-uncased-abstract` on task T61 after that the model is further finetuned on task T623.
   - Pre-processing methods. The one provided in the baseline repo
   - Training data used. The one provided by the competition organizers plus data annotated by the gliner model provided as baseline.

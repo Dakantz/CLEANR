@@ -1,0 +1,30 @@
+\begin{table}
+\caption{Dev Set Result for Task 6.2.1 for various models and approaches.}
+\label{tab:task:6_2_1}
+\begin{tabular}{llllrrrrrr}
+\toprule
+Name & RAG & LoRA & Reorder & $P$ & $R$ & $F_1$ & $P_{micro}$ & $R_{micro}$ & $F_{1,micro}$ \\
+\midrule
+hermes 3b & $\times$ & $\times$ & $\times$ & 0.04 & 0.01 & 0.02 & 0.14 & 0.02 & 0.03 \\
+hermes 3b & $\times$ & $\times$ & \checkmark & 0.04 & 0.01 & 0.02 & 0.14 & 0.02 & 0.03 \\
+hermes 8b & $\times$ & $\times$ & \checkmark & 0.04 & 0.01 & 0.02 & 0.31 & 0.05 & 0.09 \\
+hermes 8b & $\times$ & $\times$ & $\times$ & 0.04 & 0.01 & 0.02 & 0.31 & 0.05 & 0.09 \\
+openai 4 1 & $\times$ & $\times$ & \checkmark & 0.04 & 0.05 & 0.04 & 0.19 & 0.14 & 0.16 \\
+openai 4o mini & $\times$ & $\times$ & $\times$ & 0.07 & 0.09 & 0.07 & 0.19 & 0.16 & 0.17 \\
+openai 4 1 & $\times$ & $\times$ & $\times$ & 0.08 & 0.11 & 0.07 & 0.22 & 0.16 & 0.19 \\
+openai 4o mini & $\times$ & $\times$ & \checkmark & 0.09 & 0.11 & 0.08 & 0.21 & 0.19 & 0.20 \\
+hermes 3b & \checkmark & \checkmark & $\times$ & 0.13 & 0.05 & 0.07 & 0.64 & 0.13 & 0.22 \\
+hermes 3b & \checkmark & $\times$ & \checkmark & 0.11 & 0.06 & 0.08 & 0.42 & 0.15 & 0.23 \\
+hermes 3b & \checkmark & \checkmark & \checkmark & 0.15 & 0.06 & 0.08 & 0.68 & 0.15 & 0.25 \\
+hermes 3b & $\times$ & \checkmark & $\times$ & 0.17 & 0.06 & 0.09 & 0.80 & 0.16 & 0.27 \\
+hermes 3b & $\times$ & \checkmark & \checkmark & 0.17 & 0.06 & 0.09 & 0.80 & 0.16 & 0.27 \\
+openai 4 1 & \checkmark & $\times$ & \checkmark & 0.20 & 0.16 & 0.15 & 0.31 & 0.25 & 0.28 \\
+hermes 3b & \checkmark & $\times$ & $\times$ & 0.20 & 0.09 & 0.11 & 0.53 & 0.19 & 0.28 \\
+openai 4o mini & \checkmark & $\times$ & \checkmark & 0.11 & 0.10 & 0.10 & 0.34 & 0.24 & 0.28 \\
+hermes 8b & \checkmark & $\times$ & \checkmark & 0.12 & 0.08 & 0.09 & 0.47 & 0.23 & 0.31 \\
+openai 4 1 & \checkmark & $\times$ & $\times$ & 0.20 & 0.16 & 0.15 & 0.37 & 0.26 & 0.31 \\
+hermes 8b & \checkmark & $\times$ & $\times$ & 0.26 & 0.12 & 0.15 & 0.55 & 0.25 & 0.34 \\
+openai 4o mini & \checkmark & $\times$ & $\times$ & 0.15 & 0.18 & 0.15 & 0.45 & 0.30 & 0.36 \\
+\bottomrule
+\end{tabular}
+\end{table}

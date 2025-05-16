@@ -1,43 +1,32 @@
 from .erl_schema import (
-    build_grammar,
-    build_model,
-    EnumERLModel,
-    StringERLModel,
-    ExtendedStringERLModel,
-    ExtendedEnumERLModel,
-    convert_to_enum_model,
-    convert_to_string_model,
+    build_ner_grammar,
     entity_labels,
+    NER_model,
 )
 from .annotations_schema import (
     Metadata,
     Entity,
-    Relation,
-    BinaryTagBasedRelation,
-    TernaryTagBasedRelation,
-    TernaryMentionBasedRelation,
     Article,
 )
 from llama_cpp import Llama, ChatCompletionRequestMessage, LlamaGrammar
 from tqdm import tqdm
 import json
 import json_repair
-from langchain_core.language_models.chat_models import BaseChatModel, BaseMessage
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 
-from sqlalchemy import create_engine, text, select
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
-from .db_schema import Base, RelDocument
+from .db_schema import RelDocument
 
 from sentence_transformers import SentenceTransformer
-from FlagEmbedding import BGEM3FlagModel
 
-ANNOTATION_SYSTEM_PROMPT = """You are annotating a medical scientific title and abstract. You return all relation between entities within the title and abstract as JSON. The returned data include the relation type and text and should cover the most relevant relations occurring in the text. """
+ANNOTATION_SYSTEM_PROMPT = """You are annotating a medical scientific title and abstract. You return all entities in the title and abstract as JSON."""
 
 
-class Annotator:
+class NERCleanr:
     def __init__(
         self,
         model: Llama = None,
@@ -73,13 +62,12 @@ class Annotator:
             {"role": "system", "content": system_prompt}
         ]
         self.example_messages = [*self.system_message]
-        self.erl_grammar = build_grammar()
+        self.erl_grammar = build_ner_grammar()
         self.llama_grammar = LlamaGrammar(_grammar=self.erl_grammar)
 
         if langchain is not None:
-            self.structured_llm = langchain.with_structured_output(StringERLModel)
-        self.erl_model = StringERLModel
-        self.extended_erl_model = ExtendedStringERLModel
+            self.structured_llm = langchain.with_structured_output(NER_model)
+        self.ner_model = NER_model
         self.engine = create_engine(conn_str)
         # self.embedding_model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)
         self.embedding_model = SentenceTransformer(embedding_model)
@@ -101,18 +89,13 @@ class Annotator:
     def prompt_and_respone(
         self, article: Article
     ) -> list[ChatCompletionRequestMessage]:
-        simplified_relations = article_to_enum_model(
-            article, model=ExtendedEnumERLModel
-        )
-        simplified_relations_string = convert_to_string_model(
-            simplified_relations, ExtendedStringERLModel
-        )
+        simplified_entities = article_to_ner_model(article, model=NER_model)
 
         return [
             self.__prompt_article(article.metadata),
             {
                 "role": "assistant",
-                "content": simplified_relations_string.model_dump_json(),
+                "content": simplified_entities.model_dump_json(),
             },
         ]
 
@@ -185,8 +168,8 @@ class Annotator:
                     best_matches.append(Article.model_validate_json(document))
                 return best_matches
 
-    def annotate(self, articles: dict[str, Metadata]) -> dict[str, StringERLModel]:
-        annotated_relations = {}
+    def annotate(self, articles: dict[str, Metadata]) -> dict[str, list[Entity]]:
+        annotated_entities = {}
         progress = tqdm(articles.items(), desc="Annotating articles")
         for id, article in progress:
             prompts = [*self.system_message]
@@ -214,7 +197,7 @@ class Annotator:
                 )
                 chat_response = chain.invoke(self.__prompt_article(article))
                 # relation_response_enum = convert_to_enum_model(chat_response)
-                annotated_relations[id] = chat_response
+                annotated_entities[id] = chat_response
 
             else:
                 messages = prompts + [self.__prompt_article(article)]
@@ -237,97 +220,42 @@ class Annotator:
                         print(f"Error in article {id}")
                         print(log)
                         print("removing last element")
-                        fixed_response["relations"] = fixed_response["relations"][:-1]
+                        fixed_response["entities"] = fixed_response["entities"][:-1]
                     resp_str = json.dumps(fixed_response)
-                    relation_response = self.erl_model.model_validate_json(
+                    relation_response = self.ner_model.model_validate_json(
                         resp_str, strict=False
                     )
                     # relation_response_enum = convert_to_enum_model(relation_response)
-                    annotated_relations[id] = relation_response
+                    entities: list[Entity] = []
+                    for entity in relation_response.entities:
+                        text: str = (
+                            article.title
+                            if entity.location == "title"
+                            else article.abstract
+                        )
+                        start_idx = text.find(entity.text_span)
+                        end_idx = start_idx + len(entity.text_span)
+
+                        ent: Entity = Entity(
+                            location=entity.location,
+                            text_span=entity.text_span,
+                            label=entity.label,
+                            start_idx=start_idx,
+                            end_idx=end_idx,
+                        )
+                        entities.append(ent)
+                    annotated_entities[id] = entities
                 except Exception as e:
                     print(f"Error in article {id}")
                     print(response)
                     print(e)
             progress.set_postfix({"id": id})
-        return annotated_relations
-
-    def embed_articles(self, articles: list[Article], setup_db=True, collection="all"):
-        if setup_db:
-            with Session(self.engine) as session:
-                session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-                session.commit()
-            Base.metadata.drop_all(self.engine)
-            Base.metadata.create_all(self.engine)
-
-        with Session(self.engine) as session:
-            for i, article in enumerate(tqdm(articles, desc="Embedding articles")):
-                article_json = article.model_dump_json()
-                # embeddings = self.embedding_model.encode(
-                #     [article.metadata.title + "\n" + article.metadata.abstract],
-                #     batch_size=12,
-                #     max_length=8192,  # If you don't need such a long length, you can set a smaller value to speed up the encoding process.
-                # )["dense_vecs"]
-                embeddings = self.embedding_model.encode(
-                    [article.metadata.title + "\n" + article.metadata.abstract]
-                )
-                document = RelDocument(
-                    title=article.metadata.title,
-                    abstract=article.metadata.abstract,
-                    vectors=embeddings[0, :],
-                    doc_meta=article_json,
-                    collection=collection,
-                )
-                session.add(document)
-                if i % 100 == 0:
-                    session.commit()
-            session.commit()
+        return annotated_entities
 
 
-def load_train(file_path: str):
-    with open(file_path, "r") as file:
-        data = json.load(file)
-    articles: dict[str, Article] = {}
-    for id, article in data.items():
-        articles[id] = Article.model_validate(article)
-    return articles
 
-
-def load_test(file_path: str):
-    with open(file_path, "r") as file:
-        data = json.load(file)
-    articles: dict[str, Metadata] = {}
-    for id, article in data.items():
-        articles[id] = Metadata.model_validate(article)
-    return articles
-
-
-def article_to_enum_model(article: Article, model=EnumERLModel):
-    relation_jsons = [
-        relation.model_dump() for relation in article.ternary_mention_based_relations
-    ]
-    relation_json = {"relations": relation_jsons}
-    for relation in relation_json["relations"]:
-        subject_entity: Entity = next(
-            (
-                entity
-                for entity in article.entities
-                if entity.text_span == relation["subject_text_span"]
-            ),
-            None,
-        )
-        if subject_entity is not None:
-            relation["subject_label"] = subject_entity.label
-            relation["subject_location"] = subject_entity.location
-        object_entity: Entity = next(
-            (
-                entity
-                for entity in article.entities
-                if entity.text_span == relation["object_text_span"]
-            ),
-            None,
-        )
-        if object_entity is not None:
-            relation["object_label"] = object_entity.label
-            relation["object_location"] = object_entity.location
-    simplified_relations = model.model_validate(relation_json)
-    return simplified_relations
+def article_to_ner_model(article: Article, model=NER_model):
+    entities_json = [ent.model_dump() for ent in article.entities]
+    entity_json = {"entities": entities_json}
+    simplified_entities = model.model_validate(entity_json)
+    return simplified_entities

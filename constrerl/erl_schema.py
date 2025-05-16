@@ -567,6 +567,32 @@ def convert_to_string_model(
     return model.model_validate({"relations": converted_relations})
 
 
-def build_grammar():
-    rel_model = build_model()
+def build_grammar(rel_model: "StringERLModel" = StringERLModel) -> str:
     return generate_gbnf_grammar_from_pydantic_models([rel_model])
+
+
+def build_ner_model(include_idx: bool = False):
+    possible_entities = []
+    for entity in entity_labels:
+        possible_entities.append(
+            (
+                entity["label"].replace(" ", "_").replace("-", "_").replace("/", "_"),
+                clean_label(entity["label"]),
+            )
+        )
+    entity_enum = Enum("Entity", possible_entities)
+    ner_entity = create_model(
+        "NEREntity",
+        label=(entity_enum, ...),
+        location=(LabelLocation, ...),
+        text_span=(str, ...),
+    )
+    return create_model(
+        "NERModel",
+        entities=(list[ner_entity], ...),
+    )
+
+
+NER_model = build_ner_model()
+def build_ner_grammar(ner_model: "NER_model" = NER_model) -> str:
+    return generate_gbnf_grammar_from_pydantic_models([ner_model])

@@ -35,6 +35,7 @@ dependencies = [
     "pystache>=0.6.8",
     "chevron>=0.14.0",
     "openpyxl>=3.1.5",
+    "tikzplotlib-patched"
 ]
 
 [tool.uv.sources]
@@ -48,6 +49,7 @@ onnxruntime-gpu = [
 llama-cpp-agent = [
     { git = "https://github.com/Dakantz/llama-cpp-agent.git", branch = "fix-gbnf-generation-trailing-bracket" },
 ]
+tikzplotlib-patched = [{ git = "https://github.com/JasonGross/tikzplotlib" }]
 triton-nightly = [{ index = "triton-nightly" }]
 
 [[tool.uv.index]]

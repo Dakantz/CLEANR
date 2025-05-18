@@ -1,25 +1,12 @@
 # %%
 from llama_cpp import Llama
-from llama_cpp.llama_speculative import LlamaPromptLookupDecoding, LlamaDraftModel
-from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 from langchain.chat_models import init_chat_model
 from langchain.chat_models.base import BaseChatModel
-from openai import OpenAI
-import numpy as np
 
 from constrerl.annotator import (
-    Annotator,
-    Article,
     load_train,
     load_test,
-    convert_to_enum_model,
-    convert_to_string_model,
-    article_to_enum_model,
-    ExtendedEnumERLModel,
-    StringERLModel,
 )
-from constrerl.erl_schema import convert_to_output
-from constrerl._annotator_best import AnnotatorBest
 
 # %%
 import os
@@ -64,7 +51,7 @@ if __name__ == "__main__":
                 model = Llama(
                     model_path,
                     n_gpu_layers=-1,
-                    n_ctx=8096,
+                    n_ctx=8196,
                     temperature=0.1,
                     # draft_model=LlamaPromptLookupDecoding(num_pred_tokens=10),
                 )
@@ -73,7 +60,7 @@ if __name__ == "__main__":
                     args.model_spec,
                     filename="*.Q8_0.gguf",
                     n_gpu_layers=-1,
-                    n_ctx=8096,
+                    n_ctx=8196,
                     temperature=0.1,
                 )
     # %%
@@ -104,7 +91,7 @@ if __name__ == "__main__":
     # annotator.add_prompt_examples([a for a in eval_set.values()][0:few_shot_samples])
 
     # %%
-    with open("eval_grammar.gbnf", "w") as f:
+    with open("eval_grammar_ner.gbnf", "w") as f:
         f.write(ner_annotator.erl_grammar)
     print(ner_annotator.erl_grammar)
 
@@ -117,7 +104,8 @@ if __name__ == "__main__":
     )
 
     output_model = {
-        id: {"entities": article} for id, article in list(annotations.items())
+        id: {"entities": [e.model_dump() for e in entities]}
+        for id, entities in list(annotations.items())
     }
     # %%
     with open(out_path, "w") as f:

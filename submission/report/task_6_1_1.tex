@@ -1,0 +1,21 @@
+\begin{table}
+\caption{Dev Set Result for Task 6.1.1 (NER) for various models and approaches.}
+\label{tab:task:6_1_1:more}
+\begin{tabular}{llllllrrrrrr}
+\toprule
+Model & RAG & LoRA & Reorder & Low Tokens & Entity Labels & $P$ & $R$ & $F_1$ & $P_{micro}$ & $R_{micro}$ & $F_{1,micro}$ \\
+\midrule
+Hermes 3B & $\times$ & $\times$ & \checkmark & $\times$ & $\times$ & 0.04 & 0.01 & 0.02 & 0.14 & 0.02 & 0.03 \\
+Hermes 3B & $\times$ & $\times$ & $\times$ & $\times$ & $\times$ & 0.03 & 0.02 & 0.02 & 0.15 & 0.02 & 0.03 \\
+Hermes 3B & $\times$ & $\times$ & \checkmark & \checkmark & \checkmark & 0.07 & 0.07 & 0.05 & 0.14 & 0.06 & 0.09 \\
+Hermes 3B & $\times$ & $\times$ & $\times$ & $\times$ & \checkmark & 0.06 & 0.09 & 0.06 & 0.15 & 0.08 & 0.11 \\
+Hermes 3B & $\times$ & $\times$ & \checkmark & $\times$ & \checkmark & 0.06 & 0.09 & 0.06 & 0.15 & 0.08 & 0.11 \\
+Hermes 3B & \checkmark & \checkmark & $\times$ & $\times$ & $\times$ & 0.13 & 0.05 & 0.07 & 0.64 & 0.13 & 0.22 \\
+Hermes 3B & \checkmark & $\times$ & \checkmark & $\times$ & $\times$ & 0.11 & 0.06 & 0.08 & 0.42 & 0.15 & 0.23 \\
+Hermes 3B & \checkmark & \checkmark & \checkmark & $\times$ & $\times$ & 0.15 & 0.06 & 0.08 & 0.68 & 0.15 & 0.25 \\
+Hermes 3B & $\times$ & \checkmark & \checkmark & $\times$ & $\times$ & 0.17 & 0.06 & 0.09 & 0.80 & 0.16 & 0.27 \\
+Hermes 3B & $\times$ & \checkmark & $\times$ & $\times$ & $\times$ & 0.17 & 0.06 & 0.09 & 0.80 & 0.16 & 0.27 \\
+Hermes 3B & \checkmark & $\times$ & $\times$ & $\times$ & $\times$ & 0.20 & 0.09 & 0.11 & 0.53 & 0.19 & 0.28 \\
+\bottomrule
+\end{tabular}
+\end{table}

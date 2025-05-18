@@ -1,28 +1,23 @@
 from .erl_schema import (
     build_grammar,
-    build_model,
     EnumERLModel,
     StringERLModel,
     ExtendedStringERLModel,
     ExtendedEnumERLModel,
-    convert_to_enum_model,
+    clean_label,
     convert_to_string_model,
     entity_labels,
 )
 from .annotations_schema import (
     Metadata,
     Entity,
-    Relation,
-    BinaryTagBasedRelation,
-    TernaryTagBasedRelation,
-    TernaryMentionBasedRelation,
     Article,
 )
 from llama_cpp import Llama, ChatCompletionRequestMessage, LlamaGrammar
 from tqdm import tqdm
 import json
 import json_repair
-from langchain_core.language_models.chat_models import BaseChatModel, BaseMessage
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
@@ -32,8 +27,7 @@ from sqlalchemy.orm import Session
 from .db_schema import Base, RelDocument
 
 from sentence_transformers import SentenceTransformer
-from FlagEmbedding import BGEM3FlagModel
-
+import torch as th
 ANNOTATION_SYSTEM_PROMPT = """You are annotating a medical scientific title and abstract. You return all relation between entities within the title and abstract as JSON. The returned data include the relation type and text and should cover the most relevant relations occurring in the text. """
 
 
@@ -66,7 +60,7 @@ class Annotator:
                 system_prompt
                 + " The possible entities are:\n"
                 + "\n".join(
-                    [f"{e['label']}: {e['desc']}" for e in entity_labels]
+                    [f"{clean_label(e['label'])}: {e['desc']}" for e in entity_labels]
                 )
             )
         self.system_message: list[ChatCompletionRequestMessage] = [
@@ -82,7 +76,7 @@ class Annotator:
         self.extended_erl_model = ExtendedStringERLModel
         self.engine = create_engine(conn_str)
         # self.embedding_model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)
-        self.embedding_model = SentenceTransformer(embedding_model)
+        self.embedding_model = SentenceTransformer(embedding_model).to("cuda" if th.cuda.is_available() else "cpu")
 
         self.top_k = top_k
         self.few_shot = add_few_shot
@@ -138,6 +132,7 @@ class Annotator:
         search_embedding = self.embedding_model.encode(
             [article.title + "\n" + article.abstract]
         )
+        # search_embedding = search_embedding[0]
         with Session(self.engine) as session:
             collection_docs: dict[str, list] = {}
             if self.reorder:

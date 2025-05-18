@@ -1,25 +1,15 @@
 # %%
 from llama_cpp import Llama
-from llama_cpp.llama_speculative import LlamaPromptLookupDecoding, LlamaDraftModel
-from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 from langchain.chat_models import init_chat_model
 from langchain.chat_models.base import BaseChatModel
-from openai import OpenAI
-import numpy as np
 
 from constrerl.annotator import (
     Annotator,
-    Article,
     load_train,
     load_test,
-    convert_to_enum_model,
-    convert_to_string_model,
-    article_to_enum_model,
-    ExtendedEnumERLModel,
     StringERLModel,
 )
 from constrerl.erl_schema import convert_to_output
-from constrerl._annotator_best import AnnotatorBest
 
 # %%
 import os
@@ -35,9 +25,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         # "--data-path", type=str, default="data/articles/articles_test.json"
-        "--data-path", type=str, default="data/articles/articles_test.json"
+        "--data-path", type=str, default="data/articles/articles_dev.json"
     )
-    parser.add_argument("--out-path", type=str, default="data/results_test")
+    parser.add_argument("--out-path", type=str, default="data/results_dev")
     parser.add_argument("--out-file", type=str, default="dev_out.json")
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--gen-tokens", type=int, default=1024)
@@ -60,7 +50,7 @@ if __name__ == "__main__":
                 model = Llama(
                     model_path,
                     n_gpu_layers=-1,
-                    n_ctx=8096,
+                    n_ctx=8196,
                     temperature=0.1,
                     # draft_model=LlamaPromptLookupDecoding(num_pred_tokens=10),
                 )
@@ -69,7 +59,7 @@ if __name__ == "__main__":
                     args.model_spec,
                     filename="*.Q8_0.gguf",
                     n_gpu_layers=-1,
-                    n_ctx=8096,
+                    n_ctx=8196,
                     temperature=0.1,
                 )
     # %%

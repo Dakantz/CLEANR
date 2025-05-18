@@ -1,12 +1,13 @@
 \begin{table}
 \caption{Dev Set Result for Task 6.1.1 (NER) for various models and approaches.}
-\label{tab:task:6_1_1:more}
+\label{tab:task:6_1_1:ontug}
 \begin{tabular}{llllllrrrrrr}
 \toprule
  &  &  &  &  &  & $P$ & $R$ & $F_1$ & $P_{micro}$ & $R_{micro}$ & $F_{1,micro}$ \\
 Model & RAG & LoRA & Reorder & Low Tokens & Entity Labels &  &  &  &  &  &  \\
 \midrule
-\multirow[t]{10}{*}{Hermes 3B} & \multirow[t]{5}{*}{$\times$} & \multirow[t]{5}{*}{$\times$} & \multirow[t]{3}{*}{$\times$} & $\times$ & \checkmark & 0.05 & 0.02 & 0.03 & 0.06 & 0.02 & 0.03 \\
+\multirow[t]{12}{*}{Hermes 3B} & \multirow[t]{6}{*}{$\times$} & \multirow[t]{6}{*}{$\times$} & \multirow[t]{4}{*}{$\times$} & \multirow[t]{2}{*}{$\times$} & $\times$ & 0.02 & 0.03 & 0.02 & 0.04 & 0.02 & 0.02 \\
+ &  &  &  &  & \checkmark & 0.05 & 0.02 & 0.03 & 0.06 & 0.02 & 0.03 \\
 \cline{5-12}
  &  &  &  & \multirow[t]{2}{*}{\checkmark} & $\times$ & 0.02 & 0.02 & 0.01 & 0.04 & 0.01 & 0.02 \\
  &  &  &  &  & \checkmark & 0.05 & 0.02 & 0.02 & 0.06 & 0.02 & 0.03 \\
@@ -15,7 +16,8 @@ Model & RAG & LoRA & Reorder & Low Tokens & Entity Labels &  &  &  &  &  &  \\
 \cline{5-12}
  &  &  &  & \checkmark & \checkmark & 0.05 & 0.02 & 0.02 & 0.06 & 0.02 & 0.03 \\
 \cline{2-12} \cline{3-12} \cline{4-12} \cline{5-12}
- & \multirow[t]{5}{*}{\checkmark} & \multirow[t]{5}{*}{$\times$} & \multirow[t]{3}{*}{$\times$} & $\times$ & \checkmark & 0.21 & 0.08 & 0.11 & 0.25 & 0.12 & 0.16 \\
+ & \multirow[t]{6}{*}{\checkmark} & \multirow[t]{6}{*}{$\times$} & \multirow[t]{4}{*}{$\times$} & \multirow[t]{2}{*}{$\times$} & $\times$ & 0.32 & 0.08 & 0.11 & 0.28 & 0.12 & 0.17 \\
+ &  &  &  &  & \checkmark & 0.21 & 0.08 & 0.11 & 0.25 & 0.12 & 0.16 \\
 \cline{5-12}
  &  &  &  & \multirow[t]{2}{*}{\checkmark} & $\times$ & 0.32 & 0.07 & 0.10 & 0.29 & 0.10 & 0.15 \\
  &  &  &  &  & \checkmark & 0.25 & 0.05 & 0.08 & 0.31 & 0.08 & 0.13 \\

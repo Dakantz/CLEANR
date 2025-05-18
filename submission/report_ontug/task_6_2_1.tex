@@ -1,0 +1,35 @@
+\begin{table}
+\caption{Dev Set Result for Task 6.2.1 for various models and approaches.}
+\label{tab:task:6_2_1:ontug}
+\begin{tabular}{lllllrrrrrr}
+\toprule
+ &  &  &  &  & $P$ & $R$ & $F_1$ & $P_{micro}$ & $R_{micro}$ & $F_{1,micro}$ \\
+Set & Model & RAG & LoRA & Reorder &  &  &  &  &  &  \\
+\midrule
+\multirow[t]{8}{*}{$\cap$} & \multirow[t]{8}{*}{Hermes 3B} & \multirow[t]{4}{*}{$\times$} & \multirow[t]{2}{*}{$\times$} & $\times$ & 0.54 & 0.53 & 0.51 & 0.65 & 0.62 & 0.64 \\
+ &  &  &  & \checkmark & 0.54 & 0.53 & 0.51 & 0.65 & 0.62 & 0.64 \\
+\cline{4-11}
+ &  &  & \multirow[t]{2}{*}{\checkmark} & $\times$ & 0.59 & 0.54 & 0.54 & 0.71 & 0.65 & 0.67 \\
+ &  &  &  & \checkmark & 0.59 & 0.54 & 0.54 & 0.71 & 0.65 & 0.67 \\
+\cline{3-11} \cline{4-11}
+ &  & \multirow[t]{4}{*}{\checkmark} & \multirow[t]{2}{*}{$\times$} & $\times$ & 0.53 & 0.53 & 0.51 & 0.63 & 0.64 & 0.63 \\
+ &  &  &  & \checkmark & 0.56 & 0.53 & 0.52 & 0.62 & 0.63 & 0.63 \\
+\cline{4-11}
+ &  &  & \multirow[t]{2}{*}{\checkmark} & $\times$ & 0.59 & 0.53 & 0.53 & 0.68 & 0.63 & 0.65 \\
+ &  &  &  & \checkmark & 0.59 & 0.54 & 0.54 & 0.69 & 0.65 & 0.67 \\
+\cline{1-11} \cline{2-11} \cline{3-11} \cline{4-11}
+\multirow[t]{8}{*}{$\cup$} & \multirow[t]{8}{*}{Hermes 3B} & \multirow[t]{4}{*}{$\times$} & \multirow[t]{2}{*}{$\times$} & $\times$ & 0.54 & 0.53 & 0.51 & 0.65 & 0.62 & 0.64 \\
+ &  &  &  & \checkmark & 0.54 & 0.53 & 0.51 & 0.65 & 0.62 & 0.64 \\
+\cline{4-11}
+ &  &  & \multirow[t]{2}{*}{\checkmark} & $\times$ & 0.59 & 0.54 & 0.54 & 0.71 & 0.65 & 0.67 \\
+ &  &  &  & \checkmark & 0.59 & 0.54 & 0.54 & 0.71 & 0.65 & 0.67 \\
+\cline{3-11} \cline{4-11}
+ &  & \multirow[t]{4}{*}{\checkmark} & \multirow[t]{2}{*}{$\times$} & $\times$ & 0.53 & 0.53 & 0.51 & 0.63 & 0.64 & 0.63 \\
+ &  &  &  & \checkmark & 0.56 & 0.53 & 0.52 & 0.62 & 0.63 & 0.63 \\
+\cline{4-11}
+ &  &  & \multirow[t]{2}{*}{\checkmark} & $\times$ & 0.59 & 0.53 & 0.53 & 0.68 & 0.63 & 0.65 \\
+ &  &  &  & \checkmark & 0.59 & 0.54 & 0.54 & 0.69 & 0.65 & 0.67 \\
+\cline{1-11} \cline{2-11} \cline{3-11} \cline{4-11}
+\bottomrule
+\end{tabular}
+\end{table}

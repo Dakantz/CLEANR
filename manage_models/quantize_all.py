@@ -11,8 +11,8 @@ import tqdm
 
 args_parse = argparse.ArgumentParser()
 args_parse.add_argument("--model_path", type=str, default="models/")
-args_parse.add_argument("--finetunes_path", type=str, default="finetunes/")
-args_parse.add_argument("--outdir", type=str, default="quants/")
+args_parse.add_argument("--finetunes_path", type=str, default="../finetunes/")
+args_parse.add_argument("--outdir", type=str, default="../quants/")
 args_parse.add_argument("--outtype", type=str, default="q8_0")
 
 args = args_parse.parse_args()

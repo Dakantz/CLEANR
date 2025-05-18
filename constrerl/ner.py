@@ -1,5 +1,6 @@
 from .erl_schema import (
     build_ner_grammar,
+    clean_label,
     entity_labels,
     NER_model,
 )
@@ -55,7 +56,7 @@ class NERCleanr:
                 system_prompt
                 + " The possible entities are:\n"
                 + "\n".join(
-                    [f"{e['label']}: {e['desc']}" for e in entity_labels]
+                    [f"{clean_label(e['label'])}: {e['desc']}" for e in entity_labels]
                 )
             )
         self.system_message: list[ChatCompletionRequestMessage] = [
@@ -234,7 +235,7 @@ class NERCleanr:
                             else article.abstract
                         )
                         start_idx = text.find(entity.text_span)
-                        end_idx = start_idx + len(entity.text_span)
+                        end_idx = start_idx + len(entity.text_span) - 1
 
                         ent: Entity = Entity(
                             location=entity.location,
@@ -251,7 +252,6 @@ class NERCleanr:
                     print(e)
             progress.set_postfix({"id": id})
         return annotated_entities
-
 
 
 def article_to_ner_model(article: Article, model=NER_model):

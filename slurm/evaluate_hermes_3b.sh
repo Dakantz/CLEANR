@@ -2,7 +2,7 @@
 #SBATCH --job-name=clef_hermes_3b
 #SBATCH -c 1
 #SBATCH --mem 5500M
-#SBATCH -a 0-8%2
+#SBATCH -a 0-16%2
 #SBATCH --account=bkantz
 #SBATCH --output=logs/inference_%A_%a.out
 #SBATCH --error=logs/inference_%A_%a.err
@@ -31,6 +31,11 @@ if [ $(($SLURM_ARRAY_TASK_ID/4)) -eq 0 ]; then
     out_file="$out_file-entity-labels" 
 fi
 
+if [ $(($SLURM_ARRAY_TASK_ID/8)) -eq 0 ]; then
+    FLAGS="$FLAGS --gen-tokens=512"
+    echo "Using --gen-tokens=512" 
+    out_file="$out_file-low-tokens" 
+fi
 out_file="$out_file.json"
 
 echo "Running with $FLAGS to $out_file"

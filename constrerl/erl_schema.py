@@ -430,7 +430,6 @@ def enumize_label(label: str) -> Enum:
 
 class LabelLocation(Enum):
     ABSTRACT = "abstract"
-    TEXT = "text"
     TITLE = "title"
 
 

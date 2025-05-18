@@ -111,3 +111,4 @@ if __name__ == "__main__":
     with open(out_path, "w") as f:
         json.dump(output_model, f)
     # %%
+    print("Done")

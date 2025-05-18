@@ -28,6 +28,7 @@ from .db_schema import Base, RelDocument
 
 from sentence_transformers import SentenceTransformer
 import torch as th
+
 ANNOTATION_SYSTEM_PROMPT = """You are annotating a medical scientific title and abstract. You return all relation between entities within the title and abstract as JSON. The returned data include the relation type and text and should cover the most relevant relations occurring in the text. """
 
 
@@ -76,7 +77,9 @@ class Annotator:
         self.extended_erl_model = ExtendedStringERLModel
         self.engine = create_engine(conn_str)
         # self.embedding_model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)
-        self.embedding_model = SentenceTransformer(embedding_model).to("cuda" if th.cuda.is_available() else "cpu")
+        self.embedding_model = SentenceTransformer(embedding_model).to(
+            "cuda" if th.cuda.is_available() else "cpu"
+        )
 
         self.top_k = top_k
         self.few_shot = add_few_shot
@@ -184,6 +187,9 @@ class Annotator:
         annotated_relations = {}
         progress = tqdm(articles.items(), desc="Annotating articles")
         for id, article in progress:
+            annotated_relations[id] = StringERLModel(
+                relations=[],
+            )
             prompts = [*self.system_message]
             if self.few_shot:
                 for ex in self.example_messages:
@@ -213,13 +219,14 @@ class Annotator:
 
             else:
                 messages = prompts + [self.__prompt_article(article)]
-                chat_response = self.model.create_chat_completion(
-                    messages,
-                    max_tokens=self.gen_tokens,
-                    grammar=self.llama_grammar,
-                )
-                response = chat_response["choices"][-1]["message"]["content"]
+
                 try:
+                    chat_response = self.model.create_chat_completion(
+                        messages,
+                        max_tokens=self.gen_tokens,
+                        grammar=self.llama_grammar,
+                    )
+                    response = chat_response["choices"][-1]["message"]["content"]
                     resp = json_repair.repair_json(response, logging=True)
                     log = []
                     fixed_response = ""

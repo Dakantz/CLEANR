@@ -4,9 +4,9 @@
 \begin{tabular}{llllllrrrrrr}
 \toprule
  &  &  &  &  &  & $P$ & $R$ & $F_1$ & $P_{micro}$ & $R_{micro}$ & $F_{1,micro}$ \\
-Model & RAG & LoRA & Reorder & Low Tokens & Entity Labels &  &  &  &  &  &  \\
+Model & RAG & LoRA+ & Reorder & Low $t$ & Entities &  &  &  &  &  &  \\
 \midrule
-\multirow[t]{8}{*}{Hermes 3B} & \multirow[t]{5}{*}{$\times$} & \multirow[t]{5}{*}{$\times$} & \multirow[t]{3}{*}{$\times$} & $\times$ & \checkmark & 0.06 & 0.09 & 0.06 & 0.15 & 0.08 & 0.11 \\
+\multirow[t]{16}{*}{Hermes 3B} & \multirow[t]{9}{*}{$\times$} & \multirow[t]{5}{*}{$\times$} & \multirow[t]{3}{*}{$\times$} & $\times$ & \checkmark & 0.06 & 0.09 & 0.06 & 0.15 & 0.08 & 0.11 \\
 \cline{5-12}
  &  &  &  & \multirow[t]{2}{*}{\checkmark} & $\times$ & 0.04 & 0.01 & 0.02 & 0.10 & 0.01 & 0.02 \\
  &  &  &  &  & \checkmark & 0.07 & 0.07 & 0.05 & 0.14 & 0.06 & 0.09 \\
@@ -14,11 +14,25 @@ Model & RAG & LoRA & Reorder & Low Tokens & Entity Labels &  &  &  &  &  &  \\
  &  &  & \multirow[t]{2}{*}{\checkmark} & $\times$ & \checkmark & 0.06 & 0.09 & 0.06 & 0.15 & 0.08 & 0.11 \\
 \cline{5-12}
  &  &  &  & \checkmark & \checkmark & 0.07 & 0.07 & 0.05 & 0.14 & 0.06 & 0.09 \\
+\cline{3-12} \cline{4-12} \cline{5-12}
+ &  & \multirow[t]{4}{*}{\checkmark} & \multirow[t]{3}{*}{$\times$} & $\times$ & $\times$ & 0.21 & 0.12 & 0.14 & 0.60 & 0.25 & 0.35 \\
+\cline{5-12}
+ &  &  &  & \multirow[t]{2}{*}{\checkmark} & $\times$ & 0.22 & 0.12 & 0.14 & 0.60 & 0.24 & 0.34 \\
+ &  &  &  &  & \checkmark & 0.17 & 0.10 & 0.11 & 0.58 & 0.19 & 0.29 \\
+\cline{4-12} \cline{5-12}
+ &  &  & \checkmark & \checkmark & \checkmark & 0.17 & 0.10 & 0.11 & 0.58 & 0.19 & 0.29 \\
 \cline{2-12} \cline{3-12} \cline{4-12} \cline{5-12}
- & \multirow[t]{3}{*}{\checkmark} & \multirow[t]{3}{*}{$\times$} & \multirow[t]{2}{*}{$\times$} & \multirow[t]{2}{*}{\checkmark} & $\times$ & 0.24 & 0.09 & 0.12 & 0.65 & 0.16 & 0.26 \\
+ & \multirow[t]{7}{*}{\checkmark} & \multirow[t]{3}{*}{$\times$} & \multirow[t]{2}{*}{$\times$} & \multirow[t]{2}{*}{\checkmark} & $\times$ & 0.24 & 0.09 & 0.12 & 0.65 & 0.16 & 0.26 \\
  &  &  &  &  & \checkmark & 0.16 & 0.07 & 0.09 & 0.47 & 0.15 & 0.23 \\
 \cline{4-12} \cline{5-12}
  &  &  & \checkmark & \checkmark & \checkmark & 0.16 & 0.07 & 0.09 & 0.47 & 0.15 & 0.23 \\
+\cline{3-12} \cline{4-12} \cline{5-12}
+ &  & \multirow[t]{4}{*}{\checkmark} & \multirow[t]{3}{*}{$\times$} & $\times$ & $\times$ & 0.20 & 0.12 & 0.14 & 0.66 & 0.25 & 0.36 \\
+\cline{5-12}
+ &  &  &  & \multirow[t]{2}{*}{\checkmark} & $\times$ & 0.18 & 0.10 & 0.12 & 0.65 & 0.21 & 0.32 \\
+ &  &  &  &  & \checkmark & 0.17 & 0.07 & 0.09 & 0.55 & 0.15 & 0.24 \\
+\cline{4-12} \cline{5-12}
+ &  &  & \checkmark & \checkmark & \checkmark & 0.17 & 0.07 & 0.09 & 0.55 & 0.15 & 0.24 \\
 \cline{1-12} \cline{2-12} \cline{3-12} \cline{4-12} \cline{5-12}
 \bottomrule
 \end{tabular}

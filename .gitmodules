@@ -1,3 +1,6 @@
 [submodule "llama.cpp"]
 	path = llama.cpp
 	url = https://github.com/ggerganov/llama.cpp.git
+[submodule "GutBrainIE_2025_Baseline"]
+	path = GutBrainIE_2025_Baseline
+	url = https://github.com/MMartinelli-hub/GutBrainIE_2025_Baseline

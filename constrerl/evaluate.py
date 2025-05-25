@@ -179,13 +179,7 @@ def remove_overlapping_entities(predictions: dict) -> None:
         pass
 
 
-def eval_submission_6_1_NER(path, ground_truth: dict):
-    try:
-        with open(path, "r", encoding="utf-8") as file:
-            predictions = json.load(file)
-    except OSError:
-        raise OSError(f"Error in opening the specified json file: {path}")
-
+def eval_submission_6_1_NER(predictions, ground_truth: dict):
     # Remove duplicated and overlapping entities
     remove_duplicated_entities(predictions)
     remove_overlapping_entities(predictions)
@@ -312,12 +306,7 @@ def remove_duplicated_binary_tag_relations(predictions: dict) -> None:
         pass
 
 
-def eval_submission_6_2_binary_tag_RE(path, ground_truth: dict):
-    try:
-        with open(path, "r", encoding="utf-8") as file:
-            predictions = json.load(file)
-    except OSError:
-        raise OSError(f"Error in opening the specified json file: {path}")
+def eval_submission_6_2_binary_tag_RE(predictions, ground_truth: dict):
 
     # Remove duplicated binary tag-based relations
     remove_duplicated_binary_tag_relations(predictions)
@@ -447,12 +436,7 @@ def remove_duplicated_ternary_tag_relations(predictions: dict) -> None:
         pass
 
 
-def eval_submission_6_3_ternary_tag_RE(path, ground_truth: dict):
-    try:
-        with open(path, "r", encoding="utf-8") as file:
-            predictions = json.load(file)
-    except OSError:
-        raise OSError(f"Error in opening the specified json file: {path}")
+def eval_submission_6_3_ternary_tag_RE(predictions, ground_truth: dict):
 
     # Remove duplicated ternary tag-based relations
     remove_duplicated_ternary_tag_relations(predictions)
@@ -595,13 +579,7 @@ def remove_duplicated_ternary_mention_relations(predictions: dict) -> None:
         pass
 
 
-def eval_submission_6_4_ternary_mention_RE(path, ground_truth: dict):
-    try:
-        with open(path, "r", encoding="utf-8") as file:
-            predictions = json.load(file)
-    except OSError:
-        raise OSError(f"Error in opening the specified json file: {path}")
-
+def eval_submission_6_4_ternary_mention_RE(predictions, ground_truth: dict):
     # Remove duplicated ternary mention-based relations
     remove_duplicated_ternary_mention_relations(predictions)
 

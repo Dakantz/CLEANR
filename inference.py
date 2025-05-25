@@ -30,7 +30,8 @@ if __name__ == "__main__":
     parser.add_argument("--out-path", type=str, default="data/results_dev")
     parser.add_argument("--out-file", type=str, default="dev_out.json")
     parser.add_argument("--top-k", type=int, default=5)
-    parser.add_argument("--gen-tokens", type=int, default=1024)
+    parser.add_argument("--gen-tokens", type=int, default=2048)
+    parser.add_argument("--ctx", type=int, default=8196)
     parser.add_argument("--add-rag", default=False, action="store_true")
     parser.add_argument("--reorder", default=False, action="store_true")
     parser.add_argument("--entity-labels", default=False, action="store_true")
@@ -50,7 +51,7 @@ if __name__ == "__main__":
                 model = Llama(
                     model_path,
                     n_gpu_layers=-1,
-                    n_ctx=8196,
+                    n_ctx=args.ctx,
                     temperature=0.1,
                     # draft_model=LlamaPromptLookupDecoding(num_pred_tokens=10),
                 )
@@ -59,7 +60,7 @@ if __name__ == "__main__":
                     args.model_spec,
                     filename="*.Q8_0.gguf",
                     n_gpu_layers=-1,
-                    n_ctx=8196,
+                    n_ctx=args.ctx,
                     temperature=0.1,
                 )
     # %%

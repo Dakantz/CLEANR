@@ -32,9 +32,9 @@ if [ $(($SLURM_ARRAY_TASK_ID/4)) -eq 0 ]; then
 fi
 
 if [ $(($SLURM_ARRAY_TASK_ID/8)) -eq 0 ]; then
-    FLAGS="$FLAGS --gen-tokens=512"
-    echo "Using --gen-tokens=512" 
-    out_file="$out_file-low-tokens" 
+    FLAGS="$FLAGS --gen-tokens=8196 --ctx=16000"
+    echo "Using --gen-tokens=8196" 
+    out_file="$out_file-high-tokens" 
 fi
 out_file="$out_file.json"
 

@@ -6,29 +6,29 @@
  &  &  &  &  & $P$ & $R$ & $F_1$ & $P_{micro}$ & $R_{micro}$ & $F_{1,micro}$ \\
 Set & Model & RAG & LoRA & Reorder &  &  &  &  &  &  \\
 \midrule
-\multirow[c]{8}{*}{$\cap$} & \multirow[c]{8}{*}{Hermes 3B} & \multirow[c]{4}{*}{$\times$} & \multirow[c]{2}{*}{$\times$} & $\times$ & 0.54 & 0.53 & 0.51 & 0.65 & 0.60 & 0.62 \\
+\multirow[c]{8}{*}{$\cap$} & \multirow[c]{8}{*}{Hermes 3B} & \multirow[c]{4}{*}{$\times$} & \multirow[c]{2}{*}{$\times$} & $\times$ & 0.03 & 0.01 & 0.02 & 0.67 & 0.01 & 0.02 \\
 \cline{5-11}
- &  &  &  & \checkmark & 0.54 & 0.53 & 0.51 & 0.65 & 0.60 & 0.62 \\
+ &  &  &  & \checkmark & 0.01 & 0.00 & 0.01 & 0.50 & 0.00 & 0.01 \\
 \cline{4-11} \cline{5-11}
- &  &  & \multirow[c]{2}{*}{\checkmark} & $\times$ & \textbf{0.59} & \textbf{0.53} & \textbf{0.54} & \textbf{0.70} & \textbf{0.62} & \textbf{0.66} \\
+ &  &  & \multirow[c]{2}{*}{\checkmark} & $\times$ & 0.17 & 0.04 & 0.06 & \textbf{0.96} & 0.11 & 0.20 \\
 \cline{5-11}
- &  &  &  & \checkmark & \textbf{0.59} & \textbf{0.53} & \textbf{0.54} & \textbf{0.70} & \textbf{0.62} & \textbf{0.66} \\
+ &  &  &  & \checkmark & 0.17 & 0.04 & 0.06 & \textbf{0.96} & 0.11 & 0.20 \\
 \cline{3-11} \cline{4-11} \cline{5-11}
- &  & \multirow[c]{4}{*}{\checkmark} & \multirow[c]{2}{*}{$\times$} & $\times$ & 0.52 & 0.53 & 0.50 & 0.62 & 0.61 & 0.62 \\
+ &  & \multirow[c]{4}{*}{\checkmark} & \multirow[c]{2}{*}{$\times$} & $\times$ & 0.24 & 0.07 & 0.10 & 0.85 & 0.14 & 0.25 \\
 \cline{5-11}
- &  &  &  & \checkmark & 0.55 & 0.53 & 0.51 & 0.62 & 0.61 & 0.61 \\
+ &  &  &  & \checkmark & 0.13 & 0.05 & 0.06 & 0.69 & 0.12 & 0.20 \\
 \cline{4-11} \cline{5-11}
- &  &  & \multirow[c]{2}{*}{\checkmark} & $\times$ & 0.58 & 0.52 & 0.53 & 0.68 & 0.60 & 0.64 \\
+ &  &  & \multirow[c]{2}{*}{\checkmark} & $\times$ & 0.16 & 0.04 & 0.06 & 0.89 & 0.10 & 0.19 \\
 \cline{5-11}
- &  &  &  & \checkmark & 0.58 & 0.53 & 0.54 & 0.69 & \textbf{0.62} & 0.65 \\
+ &  &  &  & \checkmark & 0.14 & 0.04 & 0.06 & 0.86 & 0.10 & 0.19 \\
 \cline{1-11} \cline{2-11} \cline{3-11} \cline{4-11} \cline{5-11}
-\multirow[c]{8}{*}{$\cup$} & \multirow[c]{8}{*}{Hermes 3B} & \multirow[c]{4}{*}{$\times$} & \multirow[c]{2}{*}{$\times$} & $\times$ & 0.54 & 0.53 & 0.51 & 0.65 & 0.60 & 0.62 \\
+\multirow[c]{8}{*}{$\cup$} & \multirow[c]{8}{*}{Hermes 3B} & \multirow[c]{4}{*}{$\times$} & \multirow[c]{2}{*}{$\times$} & $\times$ & 0.55 & 0.53 & 0.51 & 0.66 & 0.60 & 0.63 \\
 \cline{5-11}
  &  &  &  & \checkmark & 0.54 & 0.53 & 0.51 & 0.65 & 0.60 & 0.62 \\
 \cline{4-11} \cline{5-11}
- &  &  & \multirow[c]{2}{*}{\checkmark} & $\times$ & \textbf{0.59} & \textbf{0.53} & \textbf{0.54} & \textbf{0.70} & \textbf{0.62} & \textbf{0.66} \\
+ &  &  & \multirow[c]{2}{*}{\checkmark} & $\times$ & \textbf{0.59} & \textbf{0.53} & \textbf{0.54} & 0.70 & \textbf{0.62} & \textbf{0.66} \\
 \cline{5-11}
- &  &  &  & \checkmark & \textbf{0.59} & \textbf{0.53} & \textbf{0.54} & \textbf{0.70} & \textbf{0.62} & \textbf{0.66} \\
+ &  &  &  & \checkmark & \textbf{0.59} & \textbf{0.53} & \textbf{0.54} & 0.70 & \textbf{0.62} & \textbf{0.66} \\
 \cline{3-11} \cline{4-11} \cline{5-11}
  &  & \multirow[c]{4}{*}{\checkmark} & \multirow[c]{2}{*}{$\times$} & $\times$ & 0.52 & 0.53 & 0.50 & 0.62 & 0.61 & 0.62 \\
 \cline{5-11}

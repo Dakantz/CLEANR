@@ -6,7 +6,7 @@ class Base(DeclarativeBase):
     pass
 
 
-N_DIMS = 384
+N_DIMS = 768
 
 
 class RelDocument(Base):

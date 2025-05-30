@@ -24,6 +24,18 @@ if [ $(($SLURM_ARRAY_TASK_ID/2)) -eq 0 ]; then
     echo "Using --reorder" 
     out_file="$out_file-reorder" 
 fi
+
+if [ $(($SLURM_ARRAY_TASK_ID/4)) -eq 0 ]; then
+    FLAGS="$FLAGS --entity-labels"
+    echo "Using --entity-labels" 
+    out_file="$out_file-entity-labels" 
+fi
+
+if [ $(($SLURM_ARRAY_TASK_ID/8)) -eq 0 ]; then
+    FLAGS="$FLAGS --gen-tokens=512"
+    echo "Using --gen-tokens=512" 
+    out_file="$out_file-low-tokens" 
+fi
 out_file="$out_file.json"
 
 echo "Running with $FLAGS to $out_file"

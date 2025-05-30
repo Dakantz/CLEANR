@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=clef_hermes_3b
+#SBATCH --job-name=clef_hermes_3b_NER
 #SBATCH -c 1
 #SBATCH --mem 5500M
 #SBATCH -a 0-16%2
@@ -32,10 +32,11 @@ if [ $(($SLURM_ARRAY_TASK_ID/4)) -eq 0 ]; then
 fi
 
 if [ $(($SLURM_ARRAY_TASK_ID/8)) -eq 0 ]; then
-    FLAGS="$FLAGS --gen-tokens=8196 --ctx=16000"
-    echo "Using --gen-tokens=8196" 
-    out_file="$out_file-high-tokens" 
+    FLAGS="$FLAGS --gen-tokens=512"
+    echo "Using --gen-tokens=512" 
+    out_file="$out_file-low-tokens" 
 fi
+
 out_file="$out_file.json"
 
 echo "Running with $FLAGS to $out_file"
@@ -45,4 +46,4 @@ echo "Running with $FLAGS to $out_file"
 cd ..
 . .venv/bin/activate
 
-python inference.py --model-provider llama --model-spec NousResearch/Hermes-3-Llama-3.2-3B-GGUF --out-file $out_file $FLAGS 
+python inference_ner.py --model-provider llama --model-spec NousResearch/Hermes-3-Llama-3.2-3B-GGUF --out-file $out_file $FLAGS 

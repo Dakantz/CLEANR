@@ -1,0 +1,16 @@
+root ::= (" "| "\n") grammar-models
+grammar-models ::= n-e-r-model
+n-e-r-model ::= "{"  ws "\"entities\"" ": " n-e-r-model-entities  ws "}"
+n-e-r-entity ::= "{"  ws "\"label\"" ": " n-e-r-entity-label ","  ws "\"location\"" ": " n-e-r-entity-location ","  ws "\"text_span\"" ": " string  ws "}"
+n-e-r-entity-label ::= "\"anatomical location\"" | "\"animal\"" | "\"biomedical technique\"" | "\"bacteria\"" | "\"chemical\"" | "\"dietary supplement\"" | "\"DDF\"" | "\"drug\"" | "\"food\"" | "\"gene\"" | "\"human\"" | "\"microbiome\"" | "\"statistical technique\""
+n-e-r-entity-location ::= "\"abstract\"" | "\"title\""
+n-e-r-model-entities ::= "[" ws (n-e-r-entity)? ("," ws n-e-r-entity)* ws "]" 
+
+boolean ::= "true" | "false"
+null ::= "null"
+string ::= "\"" (
+        [^"\\] |
+        "\\" (["\\/bfnrt] | "u" [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F])
+      )* "\""
+ws ::= ([ \t\n]+)
+number ::= "-"? ([0-9]+ | [0-9]+ "." [0-9]+) ([eE] [-+]? [0-9]+)?

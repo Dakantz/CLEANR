@@ -832,8 +832,8 @@ dependencies = [
     { name = "langchain-huggingface" },
     { name = "llama-cpp-agent" },
     { name = "llama-cpp-python", version = "0.3.4", source = { registry = "https://abetlen.github.io/llama-cpp-python/whl/cu124/" }, marker = "sys_platform == 'linux'" },
-    { name = "llama-cpp-python", version = "0.3.5", source = { registry = "https://abetlen.github.io/llama-cpp-python/whl/metal/" }, marker = "sys_platform == 'darwin'" },
-    { name = "llama-cpp-python", version = "0.3.5", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin' and sys_platform != 'linux'" },
+    { name = "llama-cpp-python", version = "0.3.4", source = { registry = "https://abetlen.github.io/llama-cpp-python/whl/metal/" }, marker = "sys_platform == 'darwin'" },
+    { name = "llama-cpp-python", version = "0.3.4", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin' and sys_platform != 'linux'" },
     { name = "openai" },
     { name = "openpyxl" },
     { name = "peft" },
@@ -868,9 +868,9 @@ requires-dist = [
     { name = "langchain", extras = ["openai"], specifier = ">=0.3.18" },
     { name = "langchain-huggingface", specifier = ">=0.1.2" },
     { name = "llama-cpp-agent", git = "https://github.com/Dakantz/llama-cpp-agent.git?branch=fix-gbnf-generation-trailing-bracket" },
-    { name = "llama-cpp-python", marker = "sys_platform != 'darwin' and sys_platform != 'linux'" },
-    { name = "llama-cpp-python", marker = "sys_platform == 'darwin'", index = "https://abetlen.github.io/llama-cpp-python/whl/metal/" },
-    { name = "llama-cpp-python", marker = "sys_platform == 'linux'", index = "https://abetlen.github.io/llama-cpp-python/whl/cu124/" },
+    { name = "llama-cpp-python", marker = "sys_platform != 'darwin' and sys_platform != 'linux'", specifier = "==0.3.4" },
+    { name = "llama-cpp-python", marker = "sys_platform == 'darwin'", specifier = "==0.3.4", index = "https://abetlen.github.io/llama-cpp-python/whl/metal/" },
+    { name = "llama-cpp-python", marker = "sys_platform == 'linux'", specifier = "==0.3.4", index = "https://abetlen.github.io/llama-cpp-python/whl/cu124/" },
     { name = "openai", specifier = ">=1.62.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "peft", specifier = ">=0.14.0" },
@@ -1720,8 +1720,8 @@ dependencies = [
     { name = "aiohttp" },
     { name = "docstring-parser" },
     { name = "llama-cpp-python", version = "0.3.4", source = { registry = "https://abetlen.github.io/llama-cpp-python/whl/cu124/" }, marker = "sys_platform == 'linux'" },
-    { name = "llama-cpp-python", version = "0.3.5", source = { registry = "https://abetlen.github.io/llama-cpp-python/whl/metal/" }, marker = "sys_platform == 'darwin'" },
-    { name = "llama-cpp-python", version = "0.3.5", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin' and sys_platform != 'linux'" },
+    { name = "llama-cpp-python", version = "0.3.4", source = { registry = "https://abetlen.github.io/llama-cpp-python/whl/metal/" }, marker = "sys_platform == 'darwin'" },
+    { name = "llama-cpp-python", version = "0.3.4", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin' and sys_platform != 'linux'" },
     { name = "pydantic" },
     { name = "requests" },
 ]
@@ -1746,7 +1746,7 @@ wheels = [
 
 [[package]]
 name = "llama-cpp-python"
-version = "0.3.5"
+version = "0.3.4"
 source = { registry = "https://abetlen.github.io/llama-cpp-python/whl/metal/" }
 resolution-markers = [
     "python_full_version >= '3.12.4' and sys_platform == 'darwin'",
@@ -1759,12 +1759,12 @@ dependencies = [
     { name = "typing-extensions", marker = "sys_platform == 'darwin'" },
 ]
 wheels = [
-    { url = "https://github.com/abetlen/llama-cpp-python/releases/download/v0.3.5-metal/llama_cpp_python-0.3.5-cp312-cp312-macosx_11_0_arm64.whl" },
+    { url = "https://github.com/abetlen/llama-cpp-python/releases/download/v0.3.4-metal/llama_cpp_python-0.3.4-cp312-cp312-macosx_11_0_arm64.whl" },
 ]
 
 [[package]]
 name = "llama-cpp-python"
-version = "0.3.5"
+version = "0.3.4"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.12.4' and sys_platform != 'darwin' and sys_platform != 'linux'",
@@ -1776,7 +1776,7 @@ dependencies = [
     { name = "numpy", marker = "sys_platform != 'darwin' and sys_platform != 'linux'" },
     { name = "typing-extensions", marker = "sys_platform != 'darwin' and sys_platform != 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/91/00/9b4c5557b694fb8d3730d006afbb2facc36f27e2c0f136d9cc009f4b1ffa/llama_cpp_python-0.3.5.tar.gz", hash = "sha256:f5ce47499d53d3973e28ca5bdaf2dfe820163fa3fb67e3050f98e2e9b58d2cf6", size = 64461879 }
+sdist = { url = "https://files.pythonhosted.org/packages/af/07/6e9e19cf88bee4986f53f5310205364baae22cb31122ebf4c36ac6152b15/llama_cpp_python-0.3.4.tar.gz", hash = "sha256:52b37129c282753edf89213e852b8b46664b059116ae2213da9cb4a45374d23d", size = 64461957 }
 
 [[package]]
 name = "lxml"

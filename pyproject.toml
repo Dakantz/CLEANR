@@ -8,7 +8,7 @@ dependencies = [
     "sigstore>=3.6.1",
     "transformers>=4.48.3",
     "llama-cpp-agent",
-    "llama-cpp-python",
+    "llama-cpp-python==0.3.4",
     "tqdm>=4.67.1",
     "ipykernel",
     "betterproto==2.0.0b6",

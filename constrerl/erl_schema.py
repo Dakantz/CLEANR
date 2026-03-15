@@ -6,12 +6,12 @@ from enum import Enum
 from llama_cpp_agent.gbnf_grammar_generator.gbnf_grammar_from_pydantic_models import (
     generate_gbnf_grammar_from_pydantic_models,
 )
-from .annotations_schema import (
+from .annotation_model import (
     Relation,
+    AnnotatedArticle,
     BinaryTagBasedRelation,
-    TernaryMentionBasedRelation,
     TernaryTagBasedRelation,
-    Article,
+    TernaryMentionBasedRelation,
 )
 
 
@@ -524,7 +524,7 @@ def convert_to_enum_model(
 
 def convert_to_output(string_data: "StringERLModel", model=EnumERLModel):
     converted = convert_to_enum_model(string_data, model)
-    converted_output_relations = Article(
+    converted_output_relations = AnnotatedArticle(
         ternary_mention_based_relations=[],
         ternary_tag_based_relations=[],
         binary_tag_based_relations=[],
@@ -593,5 +593,7 @@ def build_ner_model(include_idx: bool = False):
 
 
 NER_model = build_ner_model()
+
+
 def build_ner_grammar(ner_model: "NER_model" = NER_model) -> str:
     return generate_gbnf_grammar_from_pydantic_models([ner_model])

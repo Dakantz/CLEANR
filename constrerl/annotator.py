@@ -8,10 +8,13 @@ from .erl_schema import (
     convert_to_string_model,
     entity_labels,
 )
-from .annotations_schema import (
+from .annotation_model import (
+    Conceptlevelrelation,
+    FullRelation,
     Metadata,
     Entity,
-    Article,
+    AnnotatedArticle,
+    Relation,
 )
 from llama_cpp import Llama, ChatCompletionRequestMessage, LlamaGrammar
 from tqdm import tqdm
@@ -28,8 +31,112 @@ from .db_schema import Base, RelDocument
 
 from sentence_transformers import SentenceTransformer
 import torch as th
+import numpy as np
+from pydantic import BaseModel
+import json
+import re
 
-ANNOTATION_SYSTEM_PROMPT = """You are annotating a medical scientific title and abstract. You return all relation between entities within the title and abstract as JSON. The returned data include the relation type and text and should cover the most relevant relations occurring in the text. """
+ANNOTATION_SYSTEM_PROMPT = (
+    """You are a medical expert annotating a medical scientific title and abstract."""
+)
+
+
+class Sentence(BaseModel):
+    start_idx: int
+    from_article: Metadata
+    text: str
+    title: bool = False
+
+    entities: list[Entity] | None = None
+    relations: list[FullRelation | Relation] | None = None
+
+
+def article_to_sentences(
+    article: Metadata, relations: list[Relation] = [], entities: list[Entity] = []
+):
+    sentences: list[Sentence] = []
+
+    title_entities = [ent for ent in entities if ent.location.lower() == "title"]
+    title_relations = [
+        rel
+        for rel in relations
+        if (rel.object_location.lower() == "title")
+        or (rel.subject_location.lower() == "title")
+    ]
+    sentences.append(
+        Sentence(
+            start_idx=0,
+            from_article=article,
+            text=article.title,
+            title=True,
+            entities=title_entities,
+            relations=title_relations,
+        )
+    )
+    sentence_text = re.split(r"\.[\\n ]+", article.abstract)  # A *very* basic heuristic
+    last_idx = 0
+    for sentence in sentence_text:
+        start_idx = article.abstract.find(sentence, max(0, last_idx - 2))
+        if start_idx == -1:
+            raise ValueError(
+                f"Sentnce {sentence} not contained in abstract, start_idx {last_idx}."
+            )
+        end_idx = start_idx + len(sentence)
+        sentence_entities: list[Entity] = [
+            ent
+            for ent in entities
+            if ent.start_idx >= start_idx and ent.end_idx <= end_idx
+        ]
+        for ent in sentence_entities:
+            ent.start_idx = ent.start_idx - start_idx
+            ent.end_idx = ent.end_idx - start_idx
+        sentence_relations: list[Relation] = [
+            rel
+            for rel in relations
+            if (rel.object_start_idx >= start_idx and rel.object_end_idx <= end_idx)
+            or (rel.subject_start_idx >= start_idx and rel.subject_end_idx <= end_idx)
+        ]
+        for rel in sentence_relations:
+            rel.subject_start_idx = rel.subject_start_idx - start_idx
+            rel.subject_end_idx = rel.subject_end_idx - start_idx
+            rel.object_start_idx = rel.object_start_idx - start_idx
+            rel.object_end_idx = rel.object_end_idx - start_idx
+        sentences.append(
+            Sentence(
+                start_idx=start_idx,
+                from_article=article,
+                text=sentence,
+                entities=sentence_entities,
+                relations=sentence_relations,
+            )
+        )
+        last_idx = end_idx
+    return sentences
+
+
+def annotated_sentences_to_article(
+    sentences: list[Sentence], metadata: Metadata
+) -> AnnotatedArticle:
+    all_entities: list[Entity] = []
+    all_relations: list[FullRelation] = []
+    for sentence in sentences:
+        if sentence.entities is not None:
+            for sen in sentence.entities:
+                sen.start_idx = sen.start_idx + sentence.start_idx
+                sen.end_idx = sen.end_idx + sentence.start_idx
+            all_entities.extend(sentence.entities)
+        if sentence.relations is not None:
+            for rel in sentence.relations:
+                rel.subject_start_idx = rel.subject_start_idx + sentence.start_idx
+                rel.subject_end_idx = rel.subject_end_idx + sentence.start_idx
+                rel.object_start_idx = rel.object_start_idx + sentence.start_idx
+                rel.object_end_idx = rel.object_end_idx + sentence.start_idx
+            all_relations.extend(sentence.relations)
+    return AnnotatedArticle(
+        metadata=metadata,
+        entities=all_entities,
+        relations=all_relations,
+    )
 
 
 class Annotator:
@@ -40,7 +147,6 @@ class Annotator:
         gen_tokens=4096,
         system_prompt=ANNOTATION_SYSTEM_PROMPT,
         embedding_model="NeuML/pubmedbert-base-embeddings",
-        conn_str="postgresql+psycopg://pgvector:pgvector@localhost:5450/pgvector",
         top_k=10,
         add_few_shot=False,
         add_rag=False,
@@ -68,17 +174,9 @@ class Annotator:
             {"role": "system", "content": system_prompt}
         ]
         self.example_messages = [*self.system_message]
-        self.erl_grammar = build_grammar()
-        self.llama_grammar = LlamaGrammar(_grammar=self.erl_grammar)
 
-        if langchain is not None:
-            self.structured_llm = langchain.with_structured_output(StringERLModel)
-        self.erl_model = StringERLModel
-        self.extended_erl_model = ExtendedStringERLModel
-        self.engine = create_engine(conn_str)
-        # self.embedding_model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)
         self.embedding_model = SentenceTransformer(embedding_model).to(
-            "cuda" if th.cuda.is_available() else "cpu"
+            "cuda" if th.cuda.is_available() else "mps"
         )
 
         self.top_k = top_k
@@ -86,6 +184,11 @@ class Annotator:
         self.rag = add_rag
         self.score_reweights = score_reweights
         self.reorder = reorder
+
+        self.loaded_articles: dict[str, AnnotatedArticle] = {}
+        self.loaded_sentences: dict[str, Sentence] = {}
+        self.embeddings: dict[str, th.Tensor] = {}
+        self.embeddings_sentences: dict[str, th.Tensor] = {}
 
     @classmethod
     def __prompt_article(self, metadata: Metadata):
@@ -95,25 +198,72 @@ class Annotator:
         }
 
     @classmethod
-    def prompt_and_respone(
-        self, article: Article
-    ) -> list[ChatCompletionRequestMessage]:
-        simplified_relations = article_to_enum_model(
-            article, model=ExtendedEnumERLModel
-        )
-        simplified_relations_string = convert_to_string_model(
-            simplified_relations, ExtendedStringERLModel
+    def relations_to_str(self, relations: list[Relation], sep="\n", sep_rel="|"):
+        return sep.join(
+            [
+                sep_rel.join(
+                    [
+                        rel.subject_label,
+                        rel.predicate,
+                        rel.object_label,
+                    ]
+                )
+                for rel in relations
+            ]
         )
 
+    @classmethod
+    def entities_to_str(self, entities: list[Entity], sep="\n"):
+        return sep.join([f"{ent.label} ({ent.text_span})" for ent in entities])
+
+    @classmethod
+    def prompt_and_response_entities(
+        self, sent: Sentence
+    ) -> list[ChatCompletionRequestMessage]:
+        entities_str = Annotator.entities_to_str(sent.entities)
+
         return [
-            self.__prompt_article(article.metadata),
+            self.__prompt_article(sent.from_article),
             {
                 "role": "assistant",
-                "content": simplified_relations_string.model_dump_json(),
+                "content": entities_str,
             },
         ]
 
-    def add_prompt_examples(self, articles: list[Article]):
+    @classmethod
+    def prompt_and_response_relations(
+        self, sent: Sentence
+    ) -> list[ChatCompletionRequestMessage]:
+        relations_str = Annotator.relations_to_str(sent.relations)
+        return [
+            self.__prompt_article(sent.from_article),
+            {
+                "role": "assistant",
+                "content": relations_str,
+            },
+        ]
+
+    def embed_article(self, article: AnnotatedArticle):
+        search_embedding = self.embedding_model.encode(
+            [article.title + "\n" + article.abstract]
+        )
+        return search_embedding
+
+    def load_articles(self, articles: dict[str, AnnotatedArticle]):
+        for id, article in tqdm(list(articles.items()), desc="Embedding articles"):
+            self.embeddings[id] = self.embed_article(article.metadata)
+            sentences = article_to_sentences(
+                article.metadata, article.relations, article.entities
+            )
+            sentence_texts = [sentence.text for sentence in sentences]
+            embedded_sentences = self.embedding_model.encode(sentence_texts)
+            for i, sentence in enumerate(sentences):
+                sid = f"{id}_{sentence.start_idx}"
+                self.loaded_sentences[sid] = sentence
+                self.embeddings_sentences[sid] = embedded_sentences[i, :]
+        self.loaded_articles = articles
+
+    def add_prompt_examples(self, articles: list[AnnotatedArticle]):
         self.example_messages = [
             self.prompt_and_respone(article) for article in articles
         ]
@@ -126,68 +276,33 @@ class Annotator:
         if message["role"] == "assistant":
             return AIMessage(message["content"])
 
-    def find_similar_examples(self, article: Metadata):
+    def find_similar_examples(self, txt: str, id: str | None):
         # search_embedding = self.embedding_model.encode(
         #     [article.title + "\n" + article.abstract],
         #     batch_size=12,
         #     max_length=8192,  # If you don't need such a long length, you can set a smaller value to speed up the encoding process.
         # )["dense_vecs"]
-        search_embedding = self.embedding_model.encode(
-            [article.title + "\n" + article.abstract]
-        )
+        if id in self.embeddings_sentences.keys():
+            search_embedding = self.embeddings_sentences[id]
+        else:
+            search_embedding = self.embedding_model.encode([txt])[0]
         # search_embedding = search_embedding[0]
-        with Session(self.engine) as session:
-            collection_docs: dict[str, list] = {}
-            if self.reorder:
-                for collection in self.score_reweights.keys():
-                    collection_docs[collection] = session.execute(
-                        select(
-                            RelDocument.doc_meta.label("doc_meta"),
-                            RelDocument.vectors.cosine_distance(
-                                search_embedding[0]
-                            ).label("score"),
-                        )
-                        .filter(RelDocument.collection.contains(collection))
-                        .order_by(
-                            RelDocument.vectors.cosine_distance(search_embedding[0])
-                        )
-                        .limit(self.top_k)
-                    ).all()
-                best_matches: list[tuple[RelDocument, float]] = []
-                for collection, docs in collection_docs.items():
-                    for r in docs:
-                        document: str = r.doc_meta
-                        score = r.score * self.score_reweights[collection]
-                        best_matches.append(
-                            (Article.model_validate_json(document), score)
-                        )
-                best_matches = sorted(best_matches, key=lambda x: x[1], reverse=False)[
-                    -self.top_k :
-                ]
-                articles: list[Article] = [match for match, score in best_matches]
-                return articles
-            else:
-                best_matches_documents = session.execute(
-                    select(
-                        RelDocument.doc_meta.label("doc_meta"),
-                        RelDocument.vectors.cosine_distance(search_embedding[0]).label(
-                            "score"
-                        ),
-                    )
-                    .order_by(RelDocument.vectors.cosine_distance(search_embedding[0]))
-                    .limit(self.top_k)
-                ).all()
-                best_matches: list[Article] = []
-                for r in best_matches_documents:
-                    document: str = r.doc_meta
-                    best_matches.append(Article.model_validate_json(document))
-                return best_matches
+        ids = [
+            k
+            for k in self.embeddings_sentences.keys()
+            if id is None or (not k.startswith(id))
+        ]
+        dense_matrix = np.stack([self.embeddings_sentences[id] for id in ids])
+        similarities = dense_matrix @ search_embedding
+        max_idx = np.argsort(similarities, axis=0)[-self.top_k :][::-1]
+        best_matches_sentences = [self.loaded_sentences[ids[idx]] for idx in max_idx]
+        return best_matches_sentences
 
-    def annotate(self, articles: dict[str, Metadata]) -> dict[str, StringERLModel]:
-        annotated_relations = {}
+    def annotate(self, articles: dict[str, Metadata]) -> dict[str, AnnotatedArticle]:
+        annotated_articles = {}
         progress = tqdm(articles.items(), desc="Annotating articles")
         for id, article in progress:
-            annotated_relations[id] = StringERLModel(
+            annotated_articles[id] = StringERLModel(
                 relations=[],
             )
             prompts = [*self.system_message]
@@ -195,7 +310,7 @@ class Annotator:
                 for ex in self.example_messages:
                     prompts.extend(ex)
             if self.rag:
-                similar_articles = self.find_similar_examples(article)
+                similar_articles = self.find_similar_examples(article, id)
                 similar_article_messages = [
                     self.prompt_and_respone(similar_article)
                     for similar_article in similar_articles
@@ -215,7 +330,7 @@ class Annotator:
                 )
                 chat_response = chain.invoke(self.__prompt_article(article))
                 # relation_response_enum = convert_to_enum_model(chat_response)
-                annotated_relations[id] = chat_response
+                annotated_articles[id] = chat_response
 
             else:
                 messages = prompts + [self.__prompt_article(article)]
@@ -245,52 +360,21 @@ class Annotator:
                         resp_str, strict=False
                     )
                     # relation_response_enum = convert_to_enum_model(relation_response)
-                    annotated_relations[id] = relation_response
+                    annotated_articles[id] = relation_response
                 except Exception as e:
                     print(f"Error in article {id}")
                     print(response)
                     print(e)
             progress.set_postfix({"id": id})
-        return annotated_relations
-
-    def embed_articles(self, articles: list[Article], setup_db=True, collection="all"):
-        if setup_db:
-            with Session(self.engine) as session:
-                session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-                session.commit()
-            Base.metadata.drop_all(self.engine)
-            Base.metadata.create_all(self.engine)
-
-        with Session(self.engine) as session:
-            for i, article in enumerate(tqdm(articles, desc="Embedding articles")):
-                article_json = article.model_dump_json()
-                # embeddings = self.embedding_model.encode(
-                #     [article.metadata.title + "\n" + article.metadata.abstract],
-                #     batch_size=12,
-                #     max_length=8192,  # If you don't need such a long length, you can set a smaller value to speed up the encoding process.
-                # )["dense_vecs"]
-                embeddings = self.embedding_model.encode(
-                    [article.metadata.title + "\n" + article.metadata.abstract]
-                )
-                document = RelDocument(
-                    title=article.metadata.title,
-                    abstract=article.metadata.abstract,
-                    vectors=embeddings[0, :],
-                    doc_meta=article_json,
-                    collection=collection,
-                )
-                session.add(document)
-                if i % 100 == 0:
-                    session.commit()
-            session.commit()
+        return annotated_articles
 
 
 def load_train(file_path: str):
     with open(file_path, "r") as file:
         data = json.load(file)
-    articles: dict[str, Article] = {}
+    articles: dict[str, AnnotatedArticle] = {}
     for id, article in data.items():
-        articles[id] = Article.model_validate(article)
+        articles[id] = AnnotatedArticle.model_validate(article)
     return articles
 
 
@@ -303,7 +387,7 @@ def load_test(file_path: str):
     return articles
 
 
-def article_to_enum_model(article: Article, model=EnumERLModel):
+def article_to_enum_model(article: AnnotatedArticle, model=EnumERLModel):
     relation_jsons = [
         relation.model_dump() for relation in article.ternary_mention_based_relations
     ]

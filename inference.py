@@ -10,6 +10,7 @@ from constrerl.annotator import (
     load_train,
     load_test,
     StringERLModel,
+    prepare_for_eval,
 )
 from constrerl.erl_schema import convert_to_output
 
@@ -54,7 +55,7 @@ if __name__ == "__main__":
                     model_path,
                     n_gpu_layers=-1,
                     n_ctx=args.ctx,
-                    temperature=0,
+                    temperature=0.1,
                     # draft_model=LlamaPromptLookupDecoding(num_pred_tokens=10),
                 )
             else:
@@ -63,7 +64,7 @@ if __name__ == "__main__":
                     filename="*.Q8_0.gguf",
                     n_gpu_layers=-1,
                     n_ctx=args.ctx,
-                    temperature=0,
+                    temperature=0.1,
                 )
     # %%
 
@@ -91,16 +92,14 @@ if __name__ == "__main__":
     }
 
     # %%
-    annotations: dict[str, StringERLModel] = annotator.annotate(
+    annotations: dict[str, AnnotatedArticle] = annotator.annotate(
         {id: article.metadata for id, article in list(eval_set.items())}
     )
+    annotator.add_concept_uris(annotations)
 
-    output_model = {
-        id: convert_to_output(article).model_dump()
-        for id, article in list(annotations.items())
-    }
+    output_data = prepare_for_eval(annotations)
     # %%
     with open(out_path, "w") as f:
-        json.dump(output_model, f)
+        json.dump(output_data, f)
     # %%
     print("Done")

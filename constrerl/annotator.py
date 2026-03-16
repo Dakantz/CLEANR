@@ -328,7 +328,9 @@ class AnnotatorHelper:
         if message["role"] == "assistant":
             return AIMessage(message["content"])
 
-    def find_similar_sentences(self, txt: str, id: str | None):
+    def find_similar_sentences(
+        self, txt: str, id: str | None, ensure_relations_entities=False
+    ) -> list[Sentence]:
         # search_embedding = self.embedding_model.encode(
         #     [article.title + "\n" + article.abstract],
         #     batch_size=12,
@@ -344,6 +346,16 @@ class AnnotatorHelper:
             for k in self.embeddings_sentences.keys()
             if id is None or (not k.startswith(id))
         ]
+        if ensure_relations_entities:
+            ids = [
+                k
+                for k in ids
+                if (
+                    ensure_relations_entities
+                    and len(self.loaded_sentences[k].relations or []) > 0
+                )
+                or (len(self.loaded_sentences[k].entities or []) > 0)
+            ]
         dense_matrix = np.stack([self.embeddings_sentences[id] for id in ids])
         similarities = dense_matrix @ search_embedding
         max_idx = np.argsort(similarities, axis=0)[-self.top_k :][::-1]
@@ -433,13 +445,13 @@ class Annotator(ABC, Generic[T]):
                         prompts.extend(ex)
                 if self.helper.rag and len(self.helper.loaded_articles) > 0:
                     similar_sentences = self.helper.find_similar_sentences(
-                        sentence.text, sentence_id
+                        sentence.text, sentence_id, ensure_relations_entities=True
                     )
-                    similar_article_messages = [
-                        self.prompt_and_response(similar_article)
-                        for similar_article in similar_sentences
+                    similar_sentence_messages = [
+                        self.prompt_and_response(similar_sentence)
+                        for similar_sentence in similar_sentences
                     ]
-                    for ex in similar_article_messages:
+                    for ex in similar_sentence_messages:
                         prompts.extend(ex)
 
                 messages = prompts + [self.__prompt_sentence(sentence)]
@@ -598,8 +610,6 @@ relationship-list ::= relationship ([\n] relationship)*
 relationship ::= {relationship_grammar}
 entity-str ::= {entity_str_grammar}
         """
-        with open("relation_grammar.ebnf", "w") as f:
-            f.write(grammar_ebnf_str)
         return LlamaGrammar(_grammar=grammar_ebnf_str)
 
     def sentence_to_response(self, sent: Sentence) -> str:
@@ -679,12 +689,23 @@ def load_test(file_path: str):
     return articles
 
 
+E = TypeVar("E", bound=BaseModel)
+
+
+def unique_model(ents: list[E], model: type[E]) -> list[E]:
+
+    unique_ents = set(ent.model_dump_json() for ent in ents)
+    return [model.model_validate_json(ent) for ent in unique_ents]
+
+
 def prepare_for_eval(articles: dict[str, AnnotatedArticle]):
     prepared = {}
     for id, article in articles.items():
+        entities_unique = unique_model(article.entities or [], Entity)
+        relations_unique = unique_model(article.relations or [], Relation)
         prepared[id] = {
-            "mention_level_relations": [rel.model_dump() for rel in article.relations],
-            "concept_level_relations": [rel.model_dump() for rel in article.relations],
-            "entities": [ent.model_dump() for ent in article.entities],
+            "mention_level_relations": [rel.model_dump() for rel in relations_unique],
+            "concept_level_relations": [rel.model_dump() for rel in relations_unique],
+            "entities": [ent.model_dump() for ent in entities_unique],
         }
     return prepared

@@ -23,7 +23,7 @@ output_dir: finetunes/hermes-3-2-3B-lora-relations
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
   path: models/llama-3-2-3B-instruct/original/tokenizer.model
-  max_seq_len: 4096
+  max_seq_len: 2048
 
 # Model Arguments
 model:
@@ -87,8 +87,8 @@ metric_logger:
   log_dir: ${output_dir}/logs
 log_every_n_steps: 1
 # Environment
-device: mps
-dtype: fp16
+device: cuda
+dtype: bf16
 enable_activation_checkpointing: True  # True reduces memory
 enable_activation_offloading: False  # True reduces memory
 
@@ -103,7 +103,7 @@ profiler:
 
   #`torch.profiler.ProfilerActivity` types to trace
   cpu: True
-  mps: True
+  cuda: True
 
   #trace options passed to `torch.profiler.profile`
   profile_memory: False

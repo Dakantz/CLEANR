@@ -11,6 +11,11 @@
 ```sh
 # Install dependencies
 uv sync --prerelease=allow   
+# if you want to use the GPU:
+CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_BUILD_PARALLEL_LEVEL=8" uv sync
+# on a cluster you could start into a interactive environment:
+srun --gres=gpu:a40 -c 12 --partition allgroups  --time=10:00  --pty   bash
+
 git submodule update --init --recursive
 source .venv/bin/activate
 # dowload models (make sure to set you HF token!)

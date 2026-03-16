@@ -23,7 +23,7 @@ output_dir: finetunes/hermes-3-2-3B-lora-entities
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
   path: models/llama-3-2-3B-instruct/original/tokenizer.model
-  max_seq_len: 4096
+  max_seq_len: 2048
 
 # Model Arguments
 model:
@@ -89,7 +89,7 @@ log_every_n_steps: 1
 log_peak_memory_stats: False
 
 # Environment
-device: mps
+device: cuda
 dtype: bf16
 enable_activation_checkpointing: True  # True reduces memory
 enable_activation_offloading: False  # True reduces memory

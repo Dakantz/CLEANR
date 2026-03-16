@@ -90,7 +90,7 @@ log_peak_memory_stats: True
 
 # Environment
 device: mps
-dtype: fp16
+dtype: bf16
 enable_activation_checkpointing: True  # True reduces memory
 enable_activation_offloading: False  # True reduces memory
 

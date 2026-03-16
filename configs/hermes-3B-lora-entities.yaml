@@ -17,13 +17,13 @@
 # For single device LoRA finetuning please use 3B_lora_single_device.yaml
 # or 3B_qlora_single_device.yaml
 
-output_dir: finetunes/llama-3-2-3B-instruct-lora
+output_dir: finetunes/hermes-3-2-3B-lora-entities
 
 # Tokenizer
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
   path: models/llama-3-2-3B-instruct/original/tokenizer.model
-  max_seq_len: 2048
+  max_seq_len: 4096
 
 # Model Arguments
 model:
@@ -36,7 +36,7 @@ model:
 
 checkpointer:
   _component_: torchtune.training.FullModelHFCheckpointer
-  checkpoint_dir: models/llama-3-2-3B-instruct/
+  checkpoint_dir: models/hermes-3-2-3B/finetunes/hermes-3-2-3B-lora-entities
   checkpoint_files: [
     model-00001-of-00002.safetensors,
     model-00002-of-00002.safetensors,
@@ -53,9 +53,9 @@ dataset:
   packed: True
   train_on_input: True
   source: json
-  data_files: ./data/train_data_chats.json
+  data_files: ./data/annotations/entities/chat.json
   split: train
-  conversation_column: chat
+  conversation_column: messages
   conversation_style: openai
 
 seed: 0
@@ -90,8 +90,8 @@ log_peak_memory_stats: True
 
 # Environment
 device: cuda
-dtype: bf16
-enable_activation_checkpointing: False  # True reduces memory
+dtype: fp32
+enable_activation_checkpointing: True  # True reduces memory
 enable_activation_offloading: False  # True reduces memory
 
 

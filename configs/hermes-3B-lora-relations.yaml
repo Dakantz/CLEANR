@@ -1,43 +1,46 @@
 # Config for multi-device LoRA finetuning in lora_finetune_distributed.py
-# using a Llama3.2 1B Instruct model
+# using a Llama3.2 3B Instruct model
 #
 # This config assumes that you've run the following command before launching
 # this run:
-#   tune download meta-llama/Llama-3.2-1B-Instruct --output-dir /tmp/Llama-3.2-1B-Instruct --ignore-patterns "original/consolidated.00.pth"
+#   tune download meta-llama/Llama-3.2-3B-Instruct --output-dir /tmp/Llama-3.2-3B-Instruct --ignore-patterns "original/consolidated.00.pth"
 #
 # To launch on 2 devices, run the following command from root:
-#   tune run --nproc_per_node 2 lora_finetune_distributed --config llama3_2/1B_lora
+#   tune run --nproc_per_node 2 lora_finetune_distributed --config llama3_2/3B_lora
 #
 # You can add specific overrides through the command line. For example
 # to override the checkpointer directory while launching training
 # you can run:
-#   tune run --nproc_per_node 2 lora_finetune_distributed --config llama3_2/1B_lora checkpointer.checkpoint_dir=<YOUR_CHECKPOINT_DIR>
+#   tune run --nproc_per_node 2 lora_finetune_distributed --config llama3_2/3B_lora checkpointer.checkpoint_dir=<YOUR_CHECKPOINT_DIR>
 #
 # This config works best when the model is being fine-tuned on 2+ GPUs.
-# For single device LoRA finetuning please use 1B_lora_single_device.yaml
-# or 1B_qlora_single_device.yaml
+# For single device LoRA finetuning please use 3B_lora_single_device.yaml
+# or 3B_qlora_single_device.yaml
 
-output_dir: finetunes/llama-3-2-1B-instruct-lora/entities
+output_dir: finetunes/hermes-3-2-3B-lora-relations
 
 # Tokenizer
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
-  path: models/llama-3-2-1B-instruct/original/tokenizer.model
+  path: models/llama-3-2-3B-instruct/original/tokenizer.model
   max_seq_len: 4096
 
 # Model Arguments
 model:
-  _component_: torchtune.models.llama3_2.lora_llama3_2_1b
-  lora_attn_modules: ["q_proj", "v_proj", "output_proj"]
+  _component_: torchtune.models.llama3_2.lora_llama3_2_3b
+  lora_attn_modules: ['q_proj', 'v_proj', 'output_proj']
   apply_lora_to_mlp: True
-  lora_rank: 32 # higher increases accuracy and memory
-  lora_alpha: 64 # usually alpha=2*rank
+  lora_rank: 32  # higher increases accuracy and memory
+  lora_alpha: 64  # usually alpha=2*rank
   lora_dropout: 0.0
 
 checkpointer:
   _component_: torchtune.training.FullModelHFCheckpointer
-  checkpoint_dir: models/llama-3-2-1B-instruct/
-  checkpoint_files: [model.safetensors]
+  checkpoint_dir: models/hermes-3-2-3B/finetunes/hermes-3-2-3B-lora-relations
+  checkpoint_files: [
+    model-00001-of-00002.safetensors,
+    model-00002-of-00002.safetensors,
+  ]
   recipe_checkpoint: null
   output_dir: ${output_dir}
   model_type: LLAMA3_2
@@ -50,15 +53,14 @@ dataset:
   packed: True
   train_on_input: True
   source: json
-  data_files: ./data/Annotations/train_data_chats/entities/chat.json
+  data_files: ./data/annotations/relations/chat.json
   split: train
   conversation_column: messages
   conversation_style: openai
-  new_system_prompt: "You are a annotator for medical abstracts. You are tasked with extracting the key relations from the title and abstract and returning a JSON object with the most significant extracted relations."
 
 seed: 0
 shuffle: True
-batch_size: 1
+batch_size: 2
 
 # Optimizer and Scheduler
 optimizer:
@@ -74,10 +76,10 @@ loss:
   _component_: torchtune.modules.loss.CEWithChunkedOutputLoss
 
 # Training
-epochs: 5
+epochs: 1
 max_steps_per_epoch: null
-gradient_accumulation_steps: 8 # Use to increase effective batch size
-compile: False # torch.compile the model + loss, True increases speed + decreases memory
+gradient_accumulation_steps: 8  # Use to increase effective batch size
+compile: True  # torch.compile the model + loss, True increases speed + decreases memory
 
 # Logging
 metric_logger:
@@ -88,9 +90,10 @@ log_peak_memory_stats: True
 
 # Environment
 device: cuda
-dtype: bf16
-enable_activation_checkpointing: False # True reduces memory
-enable_activation_offloading: False # True reduces memory
+dtype: fp32
+enable_activation_checkpointing: True  # True reduces memory
+enable_activation_offloading: False  # True reduces memory
+
 
 # Profiler (disabled)
 profiler:

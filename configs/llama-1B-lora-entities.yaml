@@ -17,7 +17,7 @@
 # For single device LoRA finetuning please use 1B_lora_single_device.yaml
 # or 1B_qlora_single_device.yaml
 
-output_dir: finetunes/llama-3-2-1B-instruct-lora
+output_dir: finetunes/llama-3-2-1B-instruct-lora/entities
 
 # Tokenizer
 tokenizer:
@@ -50,7 +50,7 @@ dataset:
   packed: True
   train_on_input: True
   source: json
-  data_files: ./data/annotations/train_data_chats.json
+  data_files: ./data/Annotations/train_data_chats/entities/chat.json
   split: train
   conversation_column: messages
   conversation_style: openai

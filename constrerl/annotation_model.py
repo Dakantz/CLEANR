@@ -36,14 +36,14 @@ class Relation(BaseModel):
     subject_location: str
     subject_text_span: str
     subject_label: str
-    subject_uri: str
+    subject_uri: str | None = None
     predicate: str
     object_start_idx: int
     object_end_idx: int
     object_location: str
     object_text_span: str
     object_label: str
-    object_uri: str
+    object_uri: str | None = None
 
 
 class Entity(BaseModel):
@@ -52,7 +52,7 @@ class Entity(BaseModel):
     location: str
     text_span: str
     label: str
-    uri: str
+    uri: str | None = None
 
 
 class NEREntity(BaseModel):
@@ -81,44 +81,18 @@ class Metadata(BaseModel):
     annotator: str
 
 
-class BinaryTagBasedRelation(BaseModel):
-    subject_label: str
-    object_label: str
-
-
-class TernaryTagBasedRelation(BaseModel):
-    subject_label: str
-    predicate: str
-    object_label: str
-
-
-class TernaryMentionBasedRelation(BaseModel):
-    subject_text_span: str
-    subject_label: str
-    predicate: str
-    object_text_span: str
-    object_label: str
-
-
-class TernaryMentionBasedRelation(BaseModel):
-    subject_text_span: str
-    subject_label: str
-    predicate: str
-    object_text_span: str
-    object_label: str
-
-
 class AnnotatedArticle(BaseModel):
     metadata: Metadata
-    entities: List[Entity]
-    relations: List[Relation]
+    entities: List[Entity] | None = None
 
-    mention_level_relations: List[Mentionlevelrelation]
-    concept_level_relations: List[Conceptlevelrelation]
+    relations: List[Relation] | None = None
+
+    mention_level_relations: List[Mentionlevelrelation] | None = None
+    concept_level_relations: List[Conceptlevelrelation] | None = None
 
 
 def get_gt_entity_labels_response(annotated_article: AnnotatedArticle) -> set[str]:
-    entities = annotated_article.entities
+    entities = annotated_article.entities or []
     r_str = ",".join([e.label for e in entities])
     return r_str
 

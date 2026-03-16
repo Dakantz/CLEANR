@@ -36,7 +36,7 @@ model:
 
 checkpointer:
   _component_: torchtune.training.FullModelHFCheckpointer
-  checkpoint_dir: models/hermes-3-2-3B/finetunes/hermes-3-2-3B-lora-entities
+  checkpoint_dir: models/hermes-3-2-3B/
   checkpoint_files: [
     model-00001-of-00002.safetensors,
     model-00002-of-00002.safetensors,
@@ -76,7 +76,7 @@ loss:
   _component_: torchtune.modules.loss.CEWithChunkedOutputLoss
 
 # Training
-epochs: 1
+epochs: 3
 max_steps_per_epoch: null
 gradient_accumulation_steps: 8  # Use to increase effective batch size
 compile: True  # torch.compile the model + loss, True increases speed + decreases memory
@@ -89,8 +89,8 @@ log_every_n_steps: 1
 log_peak_memory_stats: True
 
 # Environment
-device: cuda
-dtype: fp32
+device: mps
+dtype: fp16
 enable_activation_checkpointing: True  # True reduces memory
 enable_activation_offloading: False  # True reduces memory
 

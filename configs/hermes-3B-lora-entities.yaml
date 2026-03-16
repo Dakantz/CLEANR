@@ -53,7 +53,7 @@ dataset:
   packed: True
   train_on_input: True
   source: json
-  data_files: ./data/annotations/entities/chat.json
+  data_files: ./data/Annotations/entities/chat.json
   split: train
   conversation_column: messages
   conversation_style: openai

@@ -1,18 +1,25 @@
 # %%
 from llama_cpp import Llama
+from llama_cpp.llama_speculative import LlamaPromptLookupDecoding, LlamaDraftModel
+from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 from langchain.chat_models import init_chat_model
 from langchain.chat_models.base import BaseChatModel
+from openai import OpenAI
+import numpy as np
 
 from constrerl.annotator import (
-    AnnotatedArticle,
     Annotator,
-    AnnotatorHelper,
+    Article,
     load_train,
     load_test,
+    convert_to_enum_model,
+    convert_to_string_model,
+    article_to_enum_model,
+    ExtendedEnumERLModel,
     StringERLModel,
-    prepare_for_eval,
 )
 from constrerl.erl_schema import convert_to_output
+from constrerl._annotator_best import AnnotatorBest
 
 # %%
 import os
@@ -22,26 +29,24 @@ from pathlib import Path
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-provider", type=str, default="llama")
+    parser.add_argument("--model-provider", type=str, default="openai")
     parser.add_argument(
         "--model-spec", type=str, default="quants/llama-3-2-1B-instruct-lora.gguf"
     )
     parser.add_argument(
-        "--data-path", type=str, default="data/annotations/prepared_dev_train.json"
+        # "--data-path", type=str, default="data/articles/articles_test.json"
+        "--data-path", type=str, default="data/articles/articles_test.json"
     )
-    parser.add_argument(
-        "--eval-path", type=str, default="data/Annotations/Dev/json_format/dev.json"
-    )
-    parser.add_argument("--out-path", type=str, default="data/results_dev")
+    parser.add_argument("--out-path", type=str, default="data/results_test")
     parser.add_argument("--out-file", type=str, default="dev_out.json")
     parser.add_argument("--top-k", type=int, default=5)
-    parser.add_argument("--gen-tokens", type=int, default=512)
-    parser.add_argument("--ctx", type=int, default=8196)
+    parser.add_argument("--gen-tokens", type=int, default=4096)
     parser.add_argument("--add-rag", default=False, action="store_true")
     parser.add_argument("--reorder", default=False, action="store_true")
-    parser.add_argument("--entity-labels", default=False, action="store_true")
     args = parser.parse_args()
     print("Starting with", args)
+    OPENAI_API_KEY = "sk-your-key"
+    os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
     llm: BaseChatModel = None
     model: Llama = None
     match args.model_provider:
@@ -54,7 +59,7 @@ if __name__ == "__main__":
                 model = Llama(
                     model_path,
                     n_gpu_layers=-1,
-                    n_ctx=args.ctx,
+                    n_ctx=8096,
                     temperature=0.1,
                     # draft_model=LlamaPromptLookupDecoding(num_pred_tokens=10),
                 )
@@ -63,7 +68,7 @@ if __name__ == "__main__":
                     args.model_spec,
                     filename="*.Q8_0.gguf",
                     n_gpu_layers=-1,
-                    n_ctx=args.ctx,
+                    n_ctx=8096,
                     temperature=0.1,
                 )
     # %%
@@ -75,31 +80,40 @@ if __name__ == "__main__":
     # %%
     data_path = args.data_path
     out_path = Path(args.out_path) / args.out_file
-    annotator = AnnotatorHelper(
+    annotator = Annotator(
+        langchain=llm,
         model=model,
         gen_tokens=args.gen_tokens,
         add_rag=args.add_rag,
         reorder=args.reorder,
         top_k=args.top_k,
-        add_entity_labels=args.entity_labels,
     )
-    annotator.load_articles_from_path(Path(data_path))
-
-    with open(args.eval_path, "r") as f:
-        eval_set = json.load(f)
-    eval_set = {
-        id: AnnotatedArticle.model_validate(article) for id, article in eval_set.items()
-    }
+    # annotator = Annotator(model=model, gen_tokens=2048)
+    if "articles" in args.data_path:
+        eval_set = load_test(data_path)
+    else:
+        eval_set = load_train(data_path)
+        eval_set = {id: article.metadata for id, article in eval_set.items()}
+    # few_shot_samples = 10
+    # annotator.add_prompt_examples([a for a in eval_set.values()][0:few_shot_samples])
 
     # %%
-    annotations: dict[str, AnnotatedArticle] = annotator.annotate(
-        {id: article.metadata for id, article in list(eval_set.items())}
-    )
-    annotator.add_concept_uris(annotations)
+    with open("eval_grammar.gbnf", "w") as f:
+        f.write(annotator.erl_grammar)
+    print(annotator.erl_grammar)
 
-    output_data = prepare_for_eval(annotations)
+    # %%
+    annotator.example_messages
+
+    # %%
+    annotations: dict[str, StringERLModel] = annotator.annotate(
+        {id: article for id, article in list(eval_set.items())}
+    )
+    output_model = {
+        id: convert_to_output(article).model_dump()
+        for id, article in list(annotations.items())
+    }
     # %%
     with open(out_path, "w") as f:
-        json.dump(output_data, f)
+        json.dump(output_model, f)
     # %%
-    print("Done")

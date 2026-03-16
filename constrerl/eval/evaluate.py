@@ -1,44 +1,5 @@
+# %%
 import json
-
-# # DEFINE HERE THE PATH(S) TO YOUR PREDICTIONS
-# PREDICTIONS_PATH_6_1 = 'org_T61_BaselineRun_NuNerZero.json'
-# PREDICTIONS_PATH_6_2 = 'org_T621_BaselineRun_ATLOP.json'
-# PREDICTIONS_PATH_6_3 = 'data/res'
-# PREDICTIONS_PATH_6_4 = 'org_T623_BaselineRun_ATLOP.json'
-
-# # DEFINE HERE FOR WHICH SUBTASK(S) YOU WANT TO EVAL YOUR PREDICTIONS
-# eval_6_1_NER = False
-# eval_6_2_binary_tag_RE = False
-# eval_6_3_ternary_tag_RE = True
-# eval_6_4_ternary_mention_RE = True
-
-# GROUND_TRUTH_PATH = "../Annotations/Dev/json_format/dev.json"
-# try:
-#     with open(GROUND_TRUTH_PATH, 'r', encoding='utf-8') as file:
-#         ground_truth = json.load(file)
-# except OSError:
-#     raise OSError(f'Error in opening the specified json file: {GROUND_TRUTH_PATH}')
-
-import json
-
-# DEFINE HERE THE PATH(S) TO YOUR PREDICTIONS
-# PREDICTIONS_PATH_6_1 = 'org_T61_BaselineRun_NuNerZero.json'
-# PREDICTIONS_PATH_6_2 = 'org_T621_BaselineRun_ATLOP.json'
-# PREDICTIONS_PATH_6_3 = 'org_T622_BaselineRun_ATLOP.json'
-# PREDICTIONS_PATH_6_4 = 'org_T623_BaselineRun_ATLOP.json'
-
-# # DEFINE HERE FOR WHICH SUBTASK(S) YOU WANT TO EVAL YOUR PREDICTIONS
-# eval_6_1_NER = True
-# eval_6_2_binary_tag_RE = True
-# eval_6_3_ternary_tag_RE = True
-# eval_6_4_ternary_mention_RE = True
-
-# GROUND_TRUTH_PATH = "../Annotations/Dev/json_format/dev.json"
-# try:
-#     with open(GROUND_TRUTH_PATH, 'r', encoding='utf-8') as file:
-#         ground_truth = json.load(file)
-# except OSError:
-#     raise OSError(f'Error in opening the specified json file: {GROUND_TRUTH_PATH}')
 
 LEGAL_ENTITY_LABELS = [
     "anatomical location",
@@ -109,8 +70,6 @@ def remove_overlapping_entities(predictions: dict) -> None:
         groups = {"title": [], "abstract": []}
         for ent in predictions[pmid]["entities"]:
             loc = ent["location"]
-            if loc not in groups:
-                loc = "abstract"
             groups[loc].append(ent)
 
         # For each location, build overlap clusters and select the longest
@@ -179,7 +138,8 @@ def remove_overlapping_entities(predictions: dict) -> None:
         pass
 
 
-def eval_submission_6_1_NER(predictions, ground_truth: dict):
+def eval_submission_NER(predictions, ground_truth):
+
     # Remove duplicated and overlapping entities
     remove_duplicated_entities(predictions)
     remove_overlapping_entities(predictions)
@@ -283,120 +243,97 @@ def eval_submission_6_1_NER(predictions, ground_truth: dict):
     return precision, recall, f1, micro_precision, micro_recall, micro_f1
 
 
-def remove_duplicated_binary_tag_relations(predictions: dict) -> None:
-    removed_count = 0
-    for pmid in list(predictions.keys()):
-        seen = set()
-        deduped = []
-        for rel in predictions[pmid]["binary_tag_based_relations"]:
-            key = (rel["subject_label"], rel["object_label"])
-            if key not in seen:
-                seen.add(key)
-                deduped.append(rel)
-            else:
-                removed_count += 1
-        predictions[pmid]["binary_tag_based_relations"] = deduped
+def eval_submission_NERD(predictions, ground_truth):
 
-    if removed_count > 0:
-        print(
-            f"=== Removed {removed_count} duplicated binary tag-based relations from predictions ==="
-        )
-    else:
-        # print("=== No duplicated binary tag-based relations found in predictions ===")
-        pass
+    # Remove duplicated and overlapping entities
+    remove_duplicated_entities(predictions)
+    remove_overlapping_entities(predictions)
 
-
-def eval_submission_6_2_binary_tag_RE(predictions, ground_truth: dict):
-
-    # Remove duplicated binary tag-based relations
-    remove_duplicated_binary_tag_relations(predictions)
-
-    ground_truth_binary_tag_RE = dict()
-    count_annotated_relations_per_label = {}
+    ground_truth_NERD = dict()
+    count_annotated_entities_per_label = {}
 
     for pmid, article in ground_truth.items():
-        if pmid not in ground_truth_binary_tag_RE:
-            ground_truth_binary_tag_RE[pmid] = []
-        for relation in article["binary_tag_based_relations"]:
-            subject_label = str(relation["subject_label"])
-            object_label = str(relation["object_label"])
+        if pmid not in ground_truth_NERD:
+            ground_truth_NERD[pmid] = []
+        for entity in article["entities"]:
+            start_idx = int(entity["start_idx"])
+            end_idx = int(entity["end_idx"])
+            location = str(entity["location"])
+            text_span = str(entity["text_span"])
+            label = str(entity["label"])
+            uri = str(entity["uri"])
 
-            label = (subject_label, object_label)
-            ground_truth_binary_tag_RE[pmid].append(label)
+            entry = (start_idx, end_idx, location, text_span, label, uri)
+            ground_truth_NERD[pmid].append(entry)
 
-            if label not in count_annotated_relations_per_label:
-                count_annotated_relations_per_label[label] = 0
-            count_annotated_relations_per_label[label] += 1
+            if label not in count_annotated_entities_per_label:
+                count_annotated_entities_per_label[label] = 0
+            count_annotated_entities_per_label[label] += 1
 
-    count_predicted_relations_per_label = {
-        label: 0 for label in list(count_annotated_relations_per_label.keys())
+    count_predicted_entities_per_label = {
+        label: 0 for label in list(count_annotated_entities_per_label.keys())
     }
     count_true_positives_per_label = {
-        label: 0 for label in list(count_annotated_relations_per_label.keys())
+        label: 0 for label in list(count_annotated_entities_per_label.keys())
     }
 
     for pmid in predictions.keys():
         try:
-            relations = predictions[pmid]["binary_tag_based_relations"]
+            entities = predictions[pmid]["entities"]
         except KeyError:
-            raise KeyError(
-                f'{pmid} - Not able to find field "binary_tag_based_relations" within article'
-            )
+            raise KeyError(f'{pmid} - Not able to find field "entities" within article')
 
-        for relation in relations:
+        for entity in entities:
             try:
-                subject_label = str(relation["subject_label"])
-                object_label = str(relation["object_label"])
+                start_idx = int(entity["start_idx"])
+                end_idx = int(entity["end_idx"])
+                location = str(entity["location"])
+                text_span = str(entity["text_span"])
+                label = str(entity["label"])
+                uri = str(entity["uri"])
             except KeyError:
                 raise KeyError(
-                    f"{pmid} - Not able to find one or more of the expected fields for relation: {relation}"
+                    f"{pmid} - Not able to find one or more of the expected fields for entity: {entity}"
                 )
 
-            if subject_label not in LEGAL_ENTITY_LABELS:
-                raise NameError(
-                    f"{pmid} - Illegal subject entity label {subject_label} for relation: {relation}"
-                )
+            if label not in LEGAL_ENTITY_LABELS:
+                raise NameError(f"{pmid} - Illegal label {label} for entity: {entity}")
 
-            if object_label not in LEGAL_ENTITY_LABELS:
-                raise NameError(
-                    f"{pmid} - Illegal object entity label {object_label} for relation: {relation}"
-                )
+            if label in count_predicted_entities_per_label:
+                count_predicted_entities_per_label[label] += 1
 
-            label = (subject_label, object_label)
-            if label in count_predicted_relations_per_label:
-                count_predicted_relations_per_label[label] += 1
-
-            if label in ground_truth_binary_tag_RE[pmid]:
+            entry = (start_idx, end_idx, location, text_span, label, uri)
+            if entry in ground_truth_NERD[pmid]:
                 count_true_positives_per_label[label] += 1
 
-    count_annotated_relations = sum(
-        count_annotated_relations_per_label[label]
-        for label in list(count_annotated_relations_per_label.keys())
+    count_annotated_entities = sum(
+        count_annotated_entities_per_label[label]
+        for label in list(count_annotated_entities_per_label.keys())
     )
-    count_predicted_relations = sum(
-        count_predicted_relations_per_label[label]
-        for label in list(count_annotated_relations_per_label.keys())
+    count_predicted_entities = sum(
+        count_predicted_entities_per_label[label]
+        for label in list(count_annotated_entities_per_label.keys())
     )
     count_true_positives = sum(
         count_true_positives_per_label[label]
-        for label in list(count_annotated_relations_per_label.keys())
+        for label in list(count_annotated_entities_per_label.keys())
     )
 
-    micro_precision = count_true_positives / (count_predicted_relations + 1e-10)
-    micro_recall = count_true_positives / (count_annotated_relations + 1e-10)
+    micro_precision = count_true_positives / (count_predicted_entities + 1e-10)
+    micro_recall = count_true_positives / (count_annotated_entities + 1e-10)
     micro_f1 = 2 * (
         (micro_precision * micro_recall) / (micro_precision + micro_recall + 1e-10)
     )
 
     precision, recall, f1 = 0, 0, 0
     n = 0
-    for label in list(count_annotated_relations_per_label.keys()):
+    for label in list(count_annotated_entities_per_label.keys()):
         n += 1
         current_precision = count_true_positives_per_label[label] / (
-            count_predicted_relations_per_label[label] + 1e-10
+            count_predicted_entities_per_label[label] + 1e-10
         )
         current_recall = count_true_positives_per_label[label] / (
-            count_annotated_relations_per_label[label] + 1e-10
+            count_annotated_entities_per_label[label] + 1e-10
         )
 
         precision += current_precision
@@ -413,149 +350,12 @@ def eval_submission_6_2_binary_tag_RE(predictions, ground_truth: dict):
     return precision, recall, f1, micro_precision, micro_recall, micro_f1
 
 
-def remove_duplicated_ternary_tag_relations(predictions: dict) -> None:
+def remove_duplicated_mention_level_relations(predictions: dict) -> None:
     removed_count = 0
     for pmid in list(predictions.keys()):
         seen = set()
         deduped = []
-        for rel in predictions[pmid]["ternary_tag_based_relations"]:
-            key = (rel["subject_label"], rel["predicate"], rel["object_label"])
-            if key not in seen:
-                seen.add(key)
-                deduped.append(rel)
-            else:
-                removed_count += 1
-        predictions[pmid]["ternary_tag_based_relations"] = deduped
-
-    if removed_count > 0:
-        print(
-            f"=== Removed {removed_count} duplicated ternary tag-based relations from predictions ==="
-        )
-    else:
-        # print("=== No duplicated ternary tag-based relations found in predictions ===")
-        pass
-
-
-def eval_submission_6_3_ternary_tag_RE(predictions, ground_truth: dict):
-
-    # Remove duplicated ternary tag-based relations
-    remove_duplicated_ternary_tag_relations(predictions)
-
-    ground_truth_ternary_tag_RE = dict()
-    count_annotated_relations_per_label = {}
-
-    for pmid, article in ground_truth.items():
-        if pmid not in ground_truth_ternary_tag_RE:
-            ground_truth_ternary_tag_RE[pmid] = []
-        for relation in article["ternary_tag_based_relations"]:
-            subject_label = str(relation["subject_label"])
-            predicate = str(relation["predicate"])
-            object_label = str(relation["object_label"])
-
-            label = (subject_label, predicate, object_label)
-            ground_truth_ternary_tag_RE[pmid].append(label)
-
-            if label not in count_annotated_relations_per_label:
-                count_annotated_relations_per_label[label] = 0
-            count_annotated_relations_per_label[label] += 1
-
-    count_predicted_relations_per_label = {
-        label: 0 for label in list(count_annotated_relations_per_label.keys())
-    }
-    count_true_positives_per_label = {
-        label: 0 for label in list(count_annotated_relations_per_label.keys())
-    }
-
-    for pmid in predictions.keys():
-        try:
-            relations = predictions[pmid]["ternary_tag_based_relations"]
-        except KeyError:
-            raise KeyError(
-                f'{pmid} - Not able to find field "ternary_tag_based_relations" within article'
-            )
-
-        for relation in relations:
-            try:
-                subject_label = str(relation["subject_label"])
-                predicate = str(relation["predicate"])
-                object_label = str(relation["object_label"])
-            except KeyError:
-                raise KeyError(
-                    f"{pmid} - Not able to find one or more of the expected fields for relation: {relation}"
-                )
-
-            if subject_label not in LEGAL_ENTITY_LABELS:
-                raise NameError(
-                    f"{pmid} - Illegal subject entity label {subject_label} for relation: {relation}"
-                )
-
-            if object_label not in LEGAL_ENTITY_LABELS:
-                raise NameError(
-                    f"{pmid} - Illegal object entity label {object_label} for relation: {relation}"
-                )
-
-            if predicate not in LEGAL_RELATION_LABELS:
-                raise NameError(
-                    f"{pmid} - Illegal predicate {predicate} for relation: {relation}"
-                )
-
-            label = (subject_label, predicate, object_label)
-            if label in count_predicted_relations_per_label:
-                count_predicted_relations_per_label[label] += 1
-
-            if label in ground_truth_ternary_tag_RE[pmid]:
-                count_true_positives_per_label[label] += 1
-
-    count_annotated_relations = sum(
-        count_annotated_relations_per_label[label]
-        for label in list(count_annotated_relations_per_label.keys())
-    )
-    count_predicted_relations = sum(
-        count_predicted_relations_per_label[label]
-        for label in list(count_annotated_relations_per_label.keys())
-    )
-    count_true_positives = sum(
-        count_true_positives_per_label[label]
-        for label in list(count_annotated_relations_per_label.keys())
-    )
-
-    micro_precision = count_true_positives / (count_predicted_relations + 1e-10)
-    micro_recall = count_true_positives / (count_annotated_relations + 1e-10)
-    micro_f1 = 2 * (
-        (micro_precision * micro_recall) / (micro_precision + micro_recall + 1e-10)
-    )
-
-    precision, recall, f1 = 0, 0, 0
-    n = 0
-    for label in list(count_annotated_relations_per_label.keys()):
-        n += 1
-        current_precision = count_true_positives_per_label[label] / (
-            count_predicted_relations_per_label[label] + 1e-10
-        )
-        current_recall = count_true_positives_per_label[label] / (
-            count_annotated_relations_per_label[label] + 1e-10
-        )
-
-        precision += current_precision
-        recall += current_recall
-        f1 += 2 * (
-            (current_precision * current_recall)
-            / (current_precision + current_recall + 1e-10)
-        )
-
-    precision = precision / n
-    recall = recall / n
-    f1 = f1 / n
-
-    return precision, recall, f1, micro_precision, micro_recall, micro_f1
-
-
-def remove_duplicated_ternary_mention_relations(predictions: dict) -> None:
-    removed_count = 0
-    for pmid in list(predictions.keys()):
-        seen = set()
-        deduped = []
-        for rel in predictions[pmid]["ternary_mention_based_relations"]:
+        for rel in predictions[pmid]["mention_level_relations"]:
             key = (
                 rel["subject_text_span"],
                 rel["subject_label"],
@@ -568,28 +368,29 @@ def remove_duplicated_ternary_mention_relations(predictions: dict) -> None:
                 deduped.append(rel)
             else:
                 removed_count += 1
-        predictions[pmid]["ternary_mention_based_relations"] = deduped
+        predictions[pmid]["mention_level_relations"] = deduped
 
     if removed_count > 0:
         print(
-            f"=== Removed {removed_count} duplicated ternary mention-based relations from predictions ==="
+            f"=== Removed {removed_count} duplicated mention-level relations from predictions ==="
         )
     else:
-        # print("=== No duplicated ternary mention-based relations found in predictions ===")
+        # print("=== No duplicated mention-level relations found in predictions ===")
         pass
 
 
-def eval_submission_6_4_ternary_mention_RE(predictions, ground_truth: dict):
-    # Remove duplicated ternary mention-based relations
-    remove_duplicated_ternary_mention_relations(predictions)
+def eval_submission_mention_level_RE(predictions, ground_truth):
 
-    ground_truth_ternary_mention_RE = dict()
+    # Remove duplicated mention-level relations
+    remove_duplicated_mention_level_relations(predictions)
+
+    ground_truth_mention_level_RE = dict()
     count_annotated_relations_per_label = {}
 
     for pmid, article in ground_truth.items():
-        if pmid not in ground_truth_ternary_mention_RE:
-            ground_truth_ternary_mention_RE[pmid] = []
-        for relation in article["ternary_mention_based_relations"]:
+        if pmid not in ground_truth_mention_level_RE:
+            ground_truth_mention_level_RE[pmid] = []
+        for relation in article["mention_level_relations"]:
             subject_text_span = str(relation["subject_text_span"])
             subject_label = str(relation["subject_label"])
             predicate = str(relation["predicate"])
@@ -603,8 +404,7 @@ def eval_submission_6_4_ternary_mention_RE(predictions, ground_truth: dict):
                 object_text_span,
                 object_label,
             )
-            ground_truth_ternary_mention_RE[pmid].append(entry)
-
+            ground_truth_mention_level_RE[pmid].append(entry)
             label = (subject_label, predicate, object_label)
             if label not in count_annotated_relations_per_label:
                 count_annotated_relations_per_label[label] = 0
@@ -619,10 +419,10 @@ def eval_submission_6_4_ternary_mention_RE(predictions, ground_truth: dict):
 
     for pmid in predictions.keys():
         try:
-            relations = predictions[pmid]["ternary_mention_based_relations"]
+            relations = predictions[pmid]["mention_level_relations"]
         except KeyError:
             raise KeyError(
-                f'{pmid} - Not able to find field "ternary_mention_based_relations" within article'
+                f'{pmid} - Not able to find field "mention_level_relations" within article'
             )
 
         for relation in relations:
@@ -664,7 +464,156 @@ def eval_submission_6_4_ternary_mention_RE(predictions, ground_truth: dict):
             if label in count_predicted_relations_per_label:
                 count_predicted_relations_per_label[label] += 1
 
-            if entry in ground_truth_ternary_mention_RE[pmid]:
+            if entry in ground_truth_mention_level_RE[pmid]:
+                count_true_positives_per_label[label] += 1
+
+    count_annotated_relations = sum(
+        count_annotated_relations_per_label[label]
+        for label in list(count_annotated_relations_per_label.keys())
+    )
+    count_predicted_relations = sum(
+        count_predicted_relations_per_label[label]
+        for label in list(count_annotated_relations_per_label.keys())
+    )
+    count_true_positives = sum(
+        count_true_positives_per_label[label]
+        for label in list(count_annotated_relations_per_label.keys())
+    )
+
+    micro_precision = count_true_positives / (count_predicted_relations + 1e-10)
+    micro_recall = count_true_positives / (count_annotated_relations + 1e-10)
+    micro_f1 = 2 * (
+        (micro_precision * micro_recall) / (micro_precision + micro_recall + 1e-10)
+    )
+
+    precision, recall, f1 = 0, 0, 0
+    n = 0
+    for label in list(count_annotated_relations_per_label.keys()):
+        n += 1
+        current_precision = count_true_positives_per_label[label] / (
+            count_predicted_relations_per_label[label] + 1e-10
+        )
+        current_recall = count_true_positives_per_label[label] / (
+            count_annotated_relations_per_label[label] + 1e-10
+        )
+
+        precision += current_precision
+        recall += current_recall
+        f1 += 2 * (
+            (current_precision * current_recall)
+            / (current_precision + current_recall + 1e-10)
+        )
+
+    precision = precision / n
+    recall = recall / n
+    f1 = f1 / n
+
+    return precision, recall, f1, micro_precision, micro_recall, micro_f1
+
+
+def remove_duplicated_concept_level_relations(predictions: dict) -> None:
+    removed_count = 0
+    for pmid in list(predictions.keys()):
+        seen = set()
+        deduped = []
+        for rel in predictions[pmid]["concept_level_relations"]:
+            key = (
+                rel["subject_uri"],
+                rel["subject_label"],
+                rel["predicate"],
+                rel["object_uri"],
+                rel["object_label"],
+            )
+            if key not in seen:
+                seen.add(key)
+                deduped.append(rel)
+            else:
+                removed_count += 1
+        predictions[pmid]["concept_level_relations"] = deduped
+
+    if removed_count > 0:
+        print(
+            f"=== Removed {removed_count} duplicated concept-level relations from predictions ==="
+        )
+    else:
+        # print("=== No duplicated concept-level relations found in predictions ===")
+        pass
+
+
+def eval_submission_concept_level_RE(predictions, ground_truth):
+
+    # Remove duplicated concept-level relations
+    remove_duplicated_concept_level_relations(predictions)
+
+    ground_truth_concept_level_RE = dict()
+    count_annotated_relations_per_label = {}
+
+    for pmid, article in ground_truth.items():
+        if pmid not in ground_truth_concept_level_RE:
+            ground_truth_concept_level_RE[pmid] = []
+        for relation in article["concept_level_relations"]:
+            subject_uri = str(relation["subject_uri"])
+            subject_label = str(relation["subject_label"])
+            predicate = str(relation["predicate"])
+            object_uri = str(relation["object_uri"])
+            object_label = str(relation["object_label"])
+
+            entry = (subject_uri, subject_label, predicate, object_uri, object_label)
+            ground_truth_concept_level_RE[pmid].append(entry)
+            label = (subject_label, predicate, object_label)
+            if label not in count_annotated_relations_per_label:
+                count_annotated_relations_per_label[label] = 0
+            count_annotated_relations_per_label[label] += 1
+
+    count_predicted_relations_per_label = {
+        label: 0 for label in list(count_annotated_relations_per_label.keys())
+    }
+    count_true_positives_per_label = {
+        label: 0 for label in list(count_annotated_relations_per_label.keys())
+    }
+
+    for pmid in predictions.keys():
+        try:
+            relations = predictions[pmid]["concept_level_relations"]
+        except KeyError:
+            raise KeyError(
+                f'{pmid} - Not able to find field "concept_level_relations" within article'
+            )
+
+        for relation in relations:
+            try:
+                subject_uri = str(relation["subject_uri"])
+                subject_label = str(relation["subject_label"])
+                predicate = str(relation["predicate"])
+                object_uri = str(relation["object_uri"])
+                object_label = str(relation["object_label"])
+            except KeyError:
+                raise KeyError(
+                    f"{pmid} - Not able to find one or more of the expected fields for relation: {relation}"
+                )
+
+            if subject_label not in LEGAL_ENTITY_LABELS:
+                raise NameError(
+                    f"{pmid} - Illegal subject entity label {subject_label} for relation: {relation}"
+                )
+
+            if object_label not in LEGAL_ENTITY_LABELS:
+                raise NameError(
+                    f"{pmid} - Illegal object entity label {object_label} for relation: {relation}"
+                )
+
+            if predicate not in LEGAL_RELATION_LABELS:
+                raise NameError(
+                    f"{pmid} - Illegal predicate {predicate} for relation: {relation}"
+                )
+
+            entry = (subject_uri, subject_label, predicate, object_uri, object_label)
+            label = (subject_label, predicate, object_label)
+
+            if label in count_predicted_relations_per_label:
+                count_predicted_relations_per_label[label] += 1
+
+            if entry in ground_truth_concept_level_RE[pmid]:
                 count_true_positives_per_label[label] += 1
 
     count_annotated_relations = sum(

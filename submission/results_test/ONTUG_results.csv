@@ -1,0 +1,5 @@
+team_id,task_id,run_id,system_desc,macro_precision,macro_recall,macro_f1,micro_precision,micro_recall,micro_f1
+ONTUG,T621,intersection,ElectraCLEANR,0.172093,0.055800,0.079935,0.885714,0.134199,0.233083
+ONTUG,T621,union,ElectraCLEANR,0.418467,0.407276,0.405673,0.712121,0.610390,0.657343
+ONTUG,T622,union,ElectraCLEANR,0.425413,0.402453,0.405831,0.705882,0.592593,0.644295
+ONTUG,T623,union,ElectraCLEANR,0.258872,0.229349,0.226630,0.352855,0.323056,0.337299

@@ -86,8 +86,6 @@ metric_logger:
   _component_: torchtune.training.metric_logging.DiskLogger
   log_dir: ${output_dir}/logs
 log_every_n_steps: 1
-log_peak_memory_stats: True
-
 # Environment
 device: mps
 dtype: fp16
@@ -105,7 +103,7 @@ profiler:
 
   #`torch.profiler.ProfilerActivity` types to trace
   cpu: True
-  cuda: True
+  mps: True
 
   #trace options passed to `torch.profiler.profile`
   profile_memory: False

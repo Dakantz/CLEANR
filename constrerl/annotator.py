@@ -214,6 +214,8 @@ class AnnotatorHelper:
         },
     ):
         self.model = model
+        self.relation_model = model
+        self.entities_model = model
         self.langchain = langchain
         self.gen_tokens = gen_tokens
         if add_entity_labels:
@@ -362,12 +364,20 @@ class AnnotatorHelper:
         best_matches_sentences = [self.loaded_sentences[ids[idx]] for idx in max_idx]
         return best_matches_sentences
 
-    def annotate(self, articles: dict[str, Metadata]) -> dict[str, AnnotatedArticle]:
+    def annotate(
+        self,
+        articles: dict[str, Metadata],
+        annotate: list[str] = [
+            "entities",
+            "relations",
+        ],
+    ) -> dict[str, AnnotatedArticle]:
         annotated_articles: dict[str, AnnotatedArticle] = {}
-        annotators: list[Annotator] = [
-            RelationAnnotator(self),
-            EntityAnnotator(self),
-        ]
+        annotators: list[Annotator] = []
+        if "entities" in annotate:
+            annotators.append(EntityAnnotator(self, self.entities_model))
+        if "relations" in annotate:
+            annotators.append(RelationAnnotator(self, self.relation_model))
         for annotator in annotators:
             annotated_articles_by_annotator = annotator.annotate(articles)
             if isinstance(annotator, EntityAnnotator):
@@ -390,7 +400,7 @@ class AnnotatorHelper:
         definitions_file=Path("./data/annotations/merged_uri_definitions.json"),
     ):
 
-        with open("./data/annotations/merged_uri_definitions.json", "r") as f:
+        with open(definitions_file, "r") as f:
             uri_collection_definitions = json.load(f)
 
         concepts_list = []
@@ -408,8 +418,8 @@ class AnnotatorHelper:
         vectorizer = TfidfVectorizer()
         concept_vectors = vectorizer.fit_transform(concepts_df["names"])
 
-        def find_best_uri_for_text(text: str) -> str | None:
-            text_vector = vectorizer.transform([text])
+        def find_best_uri_for_text(t: str) -> str | None:
+            text_vector = vectorizer.transform([t])
             similarities = cosine_similarity(text_vector, concept_vectors)
             best_idx = np.argmax(similarities)
             best_concept = concepts_df.iloc[best_idx]["concept"]
@@ -427,8 +437,12 @@ T = TypeVar("T")
 
 
 class Annotator(ABC, Generic[T]):
-    def __init__(self, helper: AnnotatorHelper):
+    def __init__(self, helper: AnnotatorHelper, model: Llama = None):
         self.helper = helper
+        if model is not None:
+            self.model = model
+        else:
+            self.model = helper.model
 
     def annotate(self, articles: dict[str, Metadata]) -> dict[str, AnnotatedArticle]:
         annotated_articles = {}
@@ -455,7 +469,7 @@ class Annotator(ABC, Generic[T]):
                         prompts.extend(ex)
 
                 messages = prompts + [self.__prompt_sentence(sentence)]
-                chat_response = self.helper.model.create_chat_completion(
+                chat_response = self.model.create_chat_completion(
                     messages,
                     max_tokens=self.helper.gen_tokens,
                     grammar=self.grammar(phrases),
@@ -524,8 +538,8 @@ class Annotator(ABC, Generic[T]):
 
 
 class EntityAnnotator(Annotator[Entity]):
-    def __init__(self, helper):
-        super().__init__(helper)
+    def __init__(self, helper: AnnotatorHelper, model: Llama = None):
+        super().__init__(helper, model)
 
     def __prompt_article(self, metadata: Metadata) -> ChatCompletionRequestMessage:
         return {
@@ -581,8 +595,8 @@ ent-list ::= entity ([\n] entity)*
 
 
 class RelationAnnotator(Annotator):
-    def __init__(self, helper):
-        super().__init__(helper)
+    def __init__(self, helper: AnnotatorHelper, model: Llama = None):
+        super().__init__(helper, model)
 
     def grammar(self, phrases: dict[str, AnnotationSpan]) -> LlamaGrammar:
         relationships = []

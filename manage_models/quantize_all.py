@@ -106,7 +106,7 @@ def quantize_all():
                     dry_run=False,
                     small_first_shard=False,
                 )
-                print("Exporting model...")
+                print("Exporting model to", dir_quant)
                 model_instance.write()
                 print(f"Model successfully exported to {model_instance.fname_out}")
 

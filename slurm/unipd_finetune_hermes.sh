@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=finetune_clef_hermes
-#SBATCH --array=0-1%1
+#SBATCH --array=0-3%1
 #SBATCH -c 4
-#SBATCH --mem 24G
+#SBATCH --mem 32G
 #SBATCH --gres=gpu:a40 
 #SBATCH -p allgroups
 #SBATCH --output=logs/finetune_%A_%a.out
@@ -14,9 +14,14 @@
 cd ..
 source .venv/bin/activate
 
-configs=("configs/hermes-3B-lora-entities.yaml" "configs/hermes-3B-lora-relations.yaml")
+configs=(
+    "configs/hermes-3B-lora-entities.yaml" 
+    "configs/hermes-3B-lora-relations.yaml"
+    "configs/hermes-8B-lora-entities.yaml"
+    "configs/hermes-8B-lora-relations.yaml"
+)
 
-cfg_id=$(($SLURM_ARRAY_TASK_ID%2))
+cfg_id=$(($SLURM_ARRAY_TASK_ID%4))
 selected_config=${configs[$cfg_id]}
 echo "config: $selected_config"
 

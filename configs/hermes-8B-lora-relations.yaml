@@ -17,17 +17,17 @@
 # For single device LoRA finetuning please use 3B_lora_single_device.yaml
 # or 3B_qlora_single_device.yaml
 
-output_dir: finetunes/hermes-3-2-3B-lora-relations
+output_dir: finetunes/hermes-3-1-8B-lora-relations
 
 # Tokenizer
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
-  path: models/hermes-3-2-3B/original/tokenizer.model
+  path: models/hermes-3-1-8B/original/tokenizer.model
   max_seq_len: 2048
 
 # Model Arguments
 model:
-  _component_: torchtune.models.llama3_2.lora_llama3_2_3b
+  _component_: torchtune.models.llama3_1.lora_llama3_1_8b
   lora_attn_modules: ['q_proj', 'v_proj', 'output_proj']
   apply_lora_to_mlp: True
   lora_rank: 128  # higher increases accuracy and memory
@@ -36,10 +36,12 @@ model:
 
 checkpointer:
   _component_: torchtune.training.FullModelHFCheckpointer
-  checkpoint_dir: models/hermes-3-2-3B/
+  checkpoint_dir: models/hermes-3-1-8B/
   checkpoint_files: [
-    model-00001-of-00002.safetensors,
-    model-00002-of-00002.safetensors,
+    model-00001-of-00004.safetensors,
+    model-00002-of-00004.safetensors,
+    model-00003-of-00004.safetensors,
+    model-00004-of-00004.safetensors,
   ]
   recipe_checkpoint: null
   output_dir: ${output_dir}

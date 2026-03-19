@@ -1,6 +1,16 @@
-# GutBrain IE Challenge @ CLEF 2025
+# GutBrain IE Challenge @ CLEF 2026
 
 `Benedikt Kantz, Peter Walder, Stefan Lengauer, Tobias Schreck`
+
+## reloaded for '26 - I have become CHASTE, master of CLEANR
+
+* `C`onstrained
+* en`H`anced
+* `A`nnotator
+* u`S`ing
+* on`T`ological
+* `E`ntities
+
 
 ## Our appraoch
 

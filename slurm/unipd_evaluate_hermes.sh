@@ -7,7 +7,7 @@
 #SBATCH -p allgroups
 #SBATCH --output=logs/evaluate_%A_%a.out
 #SBATCH --error=logs/evaluate_%A_%a.err
-#SBATCH --time=2:00:00
+#SBATCH --time=4:00:00
 
 # Array size is 24 to cover all combinations of:
 # - 2 model types (3B, 8B)
@@ -37,7 +37,7 @@ annotation_types=(
 
 
 FLAGS=""
-out_file="results/eval_hermes"
+out_file="eval_hermes"
 # RAG vs no RAG
 if [ $(($SLURM_ARRAY_TASK_ID%2)) -eq 0 ]; then
     FLAGS="$FLAGS --add-rag"

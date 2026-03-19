@@ -70,6 +70,8 @@ def extract_noun_phrases(txt: str) -> dict[str, AnnotationSpan]:
     # remove 'a ', 'an ', 'the ' from the beginning of noun phrases
     for k, np in (dict(noun_phrases)).items():
         new_text = re.sub(r"^(a|an|the)\s+", "", np.text, flags=re.IGNORECASE)
+        # also remove any leading special characters
+        new_text = re.sub(r"^[^\w]+", "", new_text)
         if new_text != np.text:
             noun_phrases[new_text] = AnnotationSpan(
                 start_idx=np.start_idx + len(np.text) - len(new_text),
@@ -78,6 +80,14 @@ def extract_noun_phrases(txt: str) -> dict[str, AnnotationSpan]:
             )
             noun_phrases.pop(k)
 
+        new_text_end = re.sub(r"[\"\{\}]+", "", new_text)
+        if new_text_end != new_text:
+            noun_phrases[new_text_end] = AnnotationSpan(
+                start_idx=np.start_idx,
+                end_idx=np.end_idx,
+                text=new_text_end,
+            )
+            noun_phrases.pop(new_text)
     return noun_phrases
 
 
@@ -397,7 +407,7 @@ class AnnotatorHelper:
     def add_concept_uris(
         self,
         annotated_articles: dict[str, AnnotatedArticle],
-        definitions_file=Path("./data/annotations/merged_uri_definitions.json"),
+        definitions_file=Path("./data/Annotations/merged_uri_definitions.json"),
     ):
 
         with open(definitions_file, "r") as f:
@@ -452,6 +462,8 @@ class Annotator(ABC, Generic[T]):
 
             for sentence in sentences:
                 sentence_id = f"{id}_{sentence.start_idx}"
+                if len(sentence.text.strip()) == 0:
+                    continue
                 phrases = extract_noun_phrases(sentence.text)
                 prompts = [*self.helper.system_message]
                 if self.helper.few_shot:
@@ -500,7 +512,7 @@ class Annotator(ABC, Generic[T]):
 
     @abstractmethod
     def response_to_structure(
-        self, response: str, input: Sentence, phrases: dict[str, AnnotationSpan]
+        self, response: str, sent: Sentence, phrases: dict[str, AnnotationSpan]
     ) -> list[T]:
         pass
 
@@ -522,15 +534,15 @@ class Annotator(ABC, Generic[T]):
         ]
 
     def text_span_to_idxes(
-        self, text_span: str, phrases: dict[str, AnnotationSpan]
+        self, txt: str, phrases: dict[str, AnnotationSpan], span: str
     ) -> tuple[int, int] | None:
-        if text_span in phrases:
-            text_span = phrases[text_span].text
-            start_idx = phrases[text_span].start_idx
-            end_idx = phrases[text_span].end_idx
+        if txt in phrases:
+            # text_span = phrases[txt].text
+            start_idx = phrases[txt].start_idx
+            end_idx = phrases[txt].end_idx
         else:
-            start_idx = input.text.lower().find(text_span.lower())
-            end_idx = start_idx + len(text_span)
+            start_idx = span.lower().find(txt.lower())
+            end_idx = start_idx + len(txt)
         if start_idx == -1:
             return None
         # the end_idx is exclusive, but the ground truth annotations are inclusive, so we subtract 1 from the end_idx
@@ -551,7 +563,7 @@ class EntityAnnotator(Annotator[Entity]):
         return "\n".join([f"{ent.label} ({ent.text_span})" for ent in sent.entities])
 
     def response_to_structure(
-        self, response: str, input: Sentence, phrases: dict[str, AnnotationSpan]
+        self, response: str, sent: Sentence, phrases: dict[str, AnnotationSpan]
     ) -> list[Entity]:
         entities = []
         for line in response.split("\n"):
@@ -560,13 +572,13 @@ class EntityAnnotator(Annotator[Entity]):
                 label = clean_label(match.group(1))
                 text_span_raw = match.group(2).strip()
                 start_idx, end_idx = self.text_span_to_idxes(
-                    text_span_raw, phrases
+                    text_span_raw, phrases, sent.text
                 ) or (
-                    None,
-                    None,
+                    0,
+                    len(sent.text) - 1,
                 )
                 text_span = (
-                    input.text[start_idx : end_idx + 1]
+                    sent.text[start_idx : end_idx + 1]
                     if start_idx is not None
                     else text_span_raw
                 )
@@ -576,7 +588,7 @@ class EntityAnnotator(Annotator[Entity]):
                         text_span=text_span,
                         start_idx=start_idx,
                         end_idx=end_idx,
-                        location="title" if input.title else "abstract",
+                        location="title" if sent.title else "abstract",
                     )
                 )
         return entities
@@ -585,8 +597,11 @@ class EntityAnnotator(Annotator[Entity]):
         entities = [lbl["label"] for lbl in entity_labels]
         entity_type_grammar = "|".join([f'"{e}"' for e in entities])
         entity_str_grammar = "|".join([f'"{n}"' for n in phrases.keys()])
+        if len(entity_str_grammar) == 0:
+            entity_str_grammar = "arbitrary-str"
         grammar_ebnf_str = rf"""root ::= ent-list
 entity ::= entity-type" ("entity-str")"
+arbitrary-str ::= (([0-9a-fA-F]|" "){{1, 4}})
 entity-type ::= {entity_type_grammar}
 entity-str ::= {entity_str_grammar}
 ent-list ::= entity ([\n] entity)*
@@ -618,9 +633,12 @@ class RelationAnnotator(Annotator):
             )
         relationship_grammar = "|".join(relationships_grammars)
         entity_str_grammar = "|".join([f'"{n}"' for n in phrases.keys()])
+        if len(entity_str_grammar) == 0:
+            entity_str_grammar = "arbitrary-str"
         grammar_ebnf_str = rf"""
 root ::= relationship-list
 relationship-list ::= relationship ([\n] relationship)*
+arbitrary-str ::= (([0-9a-fA-F]|" "){{1, 4}})
 relationship ::= {relationship_grammar}
 entity-str ::= {entity_str_grammar}
         """
@@ -654,7 +672,7 @@ entity-str ::= {entity_str_grammar}
                     subject_label = clean_label(subject_match.group(1))
                     subject_text_span_raw = subject_match.group(2).strip()
                     subject_start_idx, subject_end_idx = self.text_span_to_idxes(
-                        subject_text_span_raw, phrases
+                        subject_text_span_raw, phrases, sent.text
                     ) or (None, None)
                     subject_text_span = sent.text[
                         subject_start_idx : subject_end_idx + 1
@@ -663,7 +681,7 @@ entity-str ::= {entity_str_grammar}
                     object_label = clean_label(object_match.group(1))
                     object_text_span_raw = object_match.group(2).strip()
                     object_start_idx, object_end_idx = self.text_span_to_idxes(
-                        object_text_span_raw, phrases
+                        object_text_span_raw, phrases, sent.text
                     ) or (None, None)
                     object_text_span = sent.text[object_start_idx : object_end_idx + 1]
 
